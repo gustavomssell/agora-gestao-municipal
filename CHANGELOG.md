@@ -2,6 +2,13 @@
 
 Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 
+## [0.1.2] - 2026-10-20
+
+### Segurança
+
+- Remoção de credenciais demo versionadas do código, documentação e histórico Git.
+- Senha inicial das contas demo agora é definida por `SEED_PASSWORD` e não possui valor padrão.
+
 ## [0.1.1] - 2026-10-20
 
 ### Corrigido

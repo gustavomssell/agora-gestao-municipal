@@ -763,15 +763,17 @@ Na POC, os valores de orçamento são editáveis manualmente.
 
 Uma prefeitura principal com cinco secretarias (Obras, Educação, Saúde, Meio Ambiente e Administração), projetos em todos os status, atividades, riscos, planos 5W2H, SWOT, lições, anexos e histórico. Uma segunda prefeitura para validar isolamento.
 
-**Credenciais planejadas:**
+**Contas planejadas:**
 
-| Perfil | E-mail | Senha |
-|---|---|---|
-| Administrador | `admin@guapimirim.gov.br` | `[REDACTED]` |
-| Gestor (Obras) | `gestor.obras@guapimirim.gov.br` | `[REDACTED]` |
-| Editor (Obras) | `editor.obras@guapimirim.gov.br` | `[REDACTED]` |
-| Governo (Prefeito) | `prefeito@guapimirim.gov.br` | `[REDACTED]` |
-| Administrador (2º tenant) | `admin@mage.gov.br` | `[REDACTED]` |
+| Perfil | E-mail |
+|---|---|
+| Administrador | `admin@guapimirim.gov.br` |
+| Gestor (Obras) | `gestor.obras@guapimirim.gov.br` |
+| Editor (Obras) | `editor.obras@guapimirim.gov.br` |
+| Governo (Prefeito) | `prefeito@guapimirim.gov.br` |
+| Administrador (2º tenant) | `admin@mage.gov.br` |
+
+A senha inicial é definida por `SEED_PASSWORD` e não é versionada.
 
 Slug da prefeitura principal: `guapimirim`.
 
