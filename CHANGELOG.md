@@ -2,6 +2,12 @@
 
 Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 
+## [0.1.1] - 2026-10-20
+
+### Corrigido
+
+- Sincronização do `package-lock.json` para permitir `npm ci` no CI e no build Docker do frontend.
+
 ## [0.1.0] - 2026-10-20
 
 ### Adicionado
