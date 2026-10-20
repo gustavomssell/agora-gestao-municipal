@@ -20,6 +20,7 @@ type Config struct {
 	JWTSecret          string
 	AllowedOrigins     string
 	Seed               bool
+	SeedPassword       string
 	PublicBaseURL      string
 	SMTPHost           string
 	SMTPPort           int
@@ -39,6 +40,7 @@ func Load() *Config {
 		JWTSecret:          env("JWT_SECRET", devJWTSecret),
 		AllowedOrigins:     env("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"),
 		Seed:               env("SEED", "false") == "true",
+		SeedPassword:       env("SEED_PASSWORD", ""),
 		PublicBaseURL:      env("PUBLIC_BASE_URL", "http://localhost:5173"),
 		SMTPHost:           env("SMTP_HOST", ""),
 		SMTPPort:           envInt("SMTP_PORT", 587),

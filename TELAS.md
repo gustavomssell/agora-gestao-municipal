@@ -189,8 +189,8 @@ Toda tela deve prever:
 │                               │                                        │
 │  ─────────────────────        │   [ Entrar ]                           │
 │  Requisitos AGEVAP            │                                        │
-│                               │   Acesso de demonstração               │
-│                               │   admin@guapimirim.gov.br / [REDACTED]   │
+│                               │                                        │
+│                               │                                        │
 └───────────────────────────────┴────────────────────────────────────────┘
 ```
 

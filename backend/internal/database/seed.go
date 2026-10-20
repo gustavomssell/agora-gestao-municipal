@@ -23,6 +23,11 @@ func Seed(db *gorm.DB, cfg *config.Config) error {
 		return nil
 	}
 
+	demoPassword := cfg.SeedPassword
+	if demoPassword == "" {
+		return fmt.Errorf("SEED_PASSWORD deve ser definido quando SEED=true")
+	}
+
 	now := time.Now()
 	base := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
 	day := func(days int) *time.Time {
@@ -92,17 +97,17 @@ func Seed(db *gorm.DB, cfg *config.Config) error {
 		return &u
 	}
 
-	ana := user(guapimirim.ID, administracao.ID, cargoDiretor.ID, "Ana Souza", "admin@guapimirim.gov.br", "[REDACTED]", models.RoleAdmin)
-	carlos := user(guapimirim.ID, obras.ID, cargoDiretor.ID, "Carlos Lima", "gestor.obras@guapimirim.gov.br", "[REDACTED]", models.RoleGestor)
-	gabriel := user(guapimirim.ID, obras.ID, cargoEstagiario.ID, "Gabriel Alves", "editor.obras@guapimirim.gov.br", "[REDACTED]", models.RoleEditor)
-	prefeito := user(guapimirim.ID, gabinete.ID, cargoPrefeito.ID, "Roberto Nunes", "prefeito@guapimirim.gov.br", "[REDACTED]", models.RoleGoverno)
-	mariana := user(guapimirim.ID, saude.ID, cargoSecretario.ID, "Mariana Castro", "gestor.saude@guapimirim.gov.br", "[REDACTED]", models.RoleGestor)
-	paulo := user(guapimirim.ID, educacao.ID, cargoCoordenador.ID, "Paulo Mendes", "gestor.educacao@guapimirim.gov.br", "[REDACTED]", models.RoleGestor)
-	luciana := user(guapimirim.ID, ambiente.ID, cargoTecnico.ID, "Luciana Rocha", "gestor.meioambiente@guapimirim.gov.br", "[REDACTED]", models.RoleGestor)
+	ana := user(guapimirim.ID, administracao.ID, cargoDiretor.ID, "Ana Souza", "admin@guapimirim.gov.br", demoPassword, models.RoleAdmin)
+	carlos := user(guapimirim.ID, obras.ID, cargoDiretor.ID, "Carlos Lima", "gestor.obras@guapimirim.gov.br", demoPassword, models.RoleGestor)
+	gabriel := user(guapimirim.ID, obras.ID, cargoEstagiario.ID, "Gabriel Alves", "editor.obras@guapimirim.gov.br", demoPassword, models.RoleEditor)
+	prefeito := user(guapimirim.ID, gabinete.ID, cargoPrefeito.ID, "Roberto Nunes", "prefeito@guapimirim.gov.br", demoPassword, models.RoleGoverno)
+	mariana := user(guapimirim.ID, saude.ID, cargoSecretario.ID, "Mariana Castro", "gestor.saude@guapimirim.gov.br", demoPassword, models.RoleGestor)
+	paulo := user(guapimirim.ID, educacao.ID, cargoCoordenador.ID, "Paulo Mendes", "gestor.educacao@guapimirim.gov.br", demoPassword, models.RoleGestor)
+	luciana := user(guapimirim.ID, ambiente.ID, cargoTecnico.ID, "Luciana Rocha", "gestor.meioambiente@guapimirim.gov.br", demoPassword, models.RoleGestor)
 	_ = cargoAssessor
 	_ = cargoFiscal
 
-	felipe := user(mage.ID, mageAdmin.ID, mageDiretor.ID, "Felipe Torres", "admin@mage.gov.br", "[REDACTED]", models.RoleAdmin)
+	felipe := user(mage.ID, mageAdmin.ID, mageDiretor.ID, "Felipe Torres", "admin@mage.gov.br", demoPassword, models.RoleAdmin)
 	_ = mageTecnico
 	_ = gabriel
 
