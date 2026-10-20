@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ágora · Gestão de projetos municipais</title>
+    <script>
+      ;(() => {
+        try {
+          const stored = localStorage.getItem("agora:theme")
+          const dark = stored ? stored === "dark" : matchMedia("(prefers-color-scheme: dark)").matches
+          document.documentElement.classList.toggle("dark", dark)
+          document.documentElement.style.colorScheme = dark ? "dark" : "light"
+        } catch {
+          /* ignora ambientes sem storage */
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
