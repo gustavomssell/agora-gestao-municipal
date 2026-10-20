@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import { Navigate, useLocation, useNavigate } from "react-router-dom"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useForm } from "react-hook-form"
-import { ArrowRight, LockKeyhole, Mail, Building2 } from "lucide-react"
+import { ArrowRight, LockKeyhole, Mail } from "lucide-react"
 import { toast } from "sonner"
 import { api } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
@@ -14,13 +14,6 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ThemeToggle } from "@/components/theme-toggle"
-
-const demoAccounts = [
-  { label: "Administrador", email: "admin@guapimirim.gov.br", password: "[REDACTED]" },
-  { label: "Gestor de Obras", email: "gestor.obras@guapimirim.gov.br", password: "[REDACTED]" },
-  { label: "Editor de Obras", email: "editor.obras@guapimirim.gov.br", password: "[REDACTED]" },
-  { label: "Governo", email: "prefeito@guapimirim.gov.br", password: "[REDACTED]" },
-]
 
 export default function LoginPage() {
   const { token, login } = useAuth()
@@ -33,8 +26,8 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
     defaultValues: {
       tenant: "guapimirim",
-      email: "gestor.obras@guapimirim.gov.br",
-      password: "[REDACTED]",
+      email: "",
+      password: "",
     },
   })
   const errors = form.formState.errors
@@ -65,12 +58,6 @@ export default function LoginPage() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível entrar.")
     }
-  }
-
-  function applyDemo(account: (typeof demoAccounts)[number]) {
-    form.setValue("tenant", "guapimirim")
-    form.setValue("email", account.email)
-    form.setValue("password", account.password)
   }
 
   return (
@@ -211,30 +198,6 @@ export default function LoginPage() {
               </Button>
             </FieldGroup>
           </form>
-
-          <div className="mt-8 border-t border-border pt-5">
-            <p className="flex items-center gap-2 font-mono text-[0.62rem] uppercase tracking-[0.16em] text-muted-foreground">
-              <Building2 className="size-3.5" />
-              Acessos de demonstração
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {demoAccounts.map((account) => (
-                <Button
-                  key={account.email}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="justify-start text-xs"
-                  onClick={() => applyDemo(account)}
-                >
-                  {account.label}
-                </Button>
-              ))}
-            </div>
-            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-              A senha é preenchida automaticamente. Os acessos têm permissões diferentes para você comparar os perfis.
-            </p>
-          </div>
         </div>
       </section>
     </div>

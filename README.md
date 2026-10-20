@@ -58,15 +58,15 @@ Frontend em `http://localhost:5173`, API em `http://localhost:8090` e health che
 
 ### Acessos de demonstração
 
-Com `SEED=true`, o banco é populado com duas prefeituras fictícias. Senha padrão: `[REDACTED]` para administradores e `[REDACTED]`/`[REDACTED]`/`[REDACTED]` para os demais perfis.
+Com `SEED=true`, o banco é populado com duas prefeituras fictícias. Defina `SEED_PASSWORD` no ambiente para criar as contas demo; as senhas não ficam versionadas no repositório.
 
-| Prefeitura | E-mail | Senha |
-| --- | --- | --- |
-| Guapimirim | `admin@guapimirim.gov.br` | `[REDACTED]` |
-| Guapimirim | `gestor.obras@guapimirim.gov.br` | `[REDACTED]` |
-| Guapimirim | `editor.obras@guapimirim.gov.br` | `[REDACTED]` |
-| Guapimirim | `prefeito@guapimirim.gov.br` | `[REDACTED]` |
-| Magé | `admin@mage.gov.br` | `[REDACTED]` |
+| Prefeitura | E-mail |
+| --- | --- |
+| Guapimirim | `admin@guapimirim.gov.br` |
+| Guapimirim | `gestor.obras@guapimirim.gov.br` |
+| Guapimirim | `editor.obras@guapimirim.gov.br` |
+| Guapimirim | `prefeito@guapimirim.gov.br` |
+| Magé | `admin@mage.gov.br` |
 
 ### Scripts
 
