@@ -79,7 +79,7 @@ export default function KanbanPage() {
           />
         </div>
         <Select value={priority} onValueChange={setPriority}>
-          <SelectTrigger className="w-40 sm:w-44" aria-label="Filtrar por prioridade">
+          <SelectTrigger className="w-full sm:w-44" aria-label="Filtrar por prioridade">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -94,7 +94,7 @@ export default function KanbanPage() {
           </SelectContent>
         </Select>
         <Select value={secretariatId} onValueChange={setSecretariatId}>
-          <SelectTrigger className="w-40 sm:w-52" aria-label="Filtrar por secretaria">
+          <SelectTrigger className="w-full sm:w-52" aria-label="Filtrar por secretaria">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -111,13 +111,13 @@ export default function KanbanPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
             <Skeleton key={index} className="h-80 w-full" />
           ))}
         </div>
       ) : (
-        <div className="grid items-start gap-4 md:grid-cols-3">
+        <div className="grid items-start gap-4 md:grid-cols-2 lg:grid-cols-3">
           {columns.map((column) => (
             <section
               key={column.key}

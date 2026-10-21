@@ -92,7 +92,7 @@ export function GlobalSearch() {
         variant="ghost"
         size="icon"
         onClick={() => setOpen(true)}
-        className="lg:hidden"
+        className="size-10 sm:size-8 lg:hidden"
         aria-label="Buscar no sistema"
       >
         <Search />

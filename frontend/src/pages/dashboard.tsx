@@ -77,7 +77,7 @@ export default function DashboardPage() {
           <>
             {canFilterSecretariat ? (
               <Select value={secretariatId} onValueChange={setSecretariatId}>
-                <SelectTrigger className="w-52" aria-label="Filtrar por secretaria">
+                <SelectTrigger className="w-full sm:w-44 lg:w-52" aria-label="Filtrar por secretaria">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -103,7 +103,7 @@ export default function DashboardPage() {
               </label>
             ) : null}
             <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-44">
+              <SelectTrigger className="w-full sm:w-36 lg:w-44">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -117,7 +117,7 @@ export default function DashboardPage() {
               </SelectContent>
             </Select>
             {me?.permissions.can_create_project ? (
-              <Button asChild>
+              <Button asChild className="w-full sm:w-auto">
                 <Link to="/projetos/novo">
                   <Plus data-icon="inline-start" />
                   Novo projeto
@@ -147,7 +147,7 @@ export default function DashboardPage() {
       ) : (
         <>
           <section className="page-grid relative overflow-hidden rounded-sm bg-sidebar text-sidebar-foreground">
-            <div className="grid gap-8 px-6 py-7 md:grid-cols-[1.2fr_1fr] md:px-9 md:py-8">
+            <div className="grid gap-8 px-6 py-7 lg:grid-cols-[1.2fr_1fr] lg:px-9 lg:py-8">
               <div className="flex flex-col justify-between gap-6">
                 <div>
                   <p className="font-mono text-[0.62rem] uppercase tracking-[0.2em] text-sidebar-foreground/60">
@@ -175,7 +175,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/15 pt-6 md:border-l md:border-t-0 md:pl-8 md:pt-0">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/15 pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
                 <div>
                   <p className="font-mono text-[0.6rem] uppercase tracking-[0.16em] text-sidebar-foreground/60">Em atraso</p>
                   <p className={cn("mt-1 font-heading text-3xl", summary.late > 0 ? "text-[#e0887a]" : "text-white")}>

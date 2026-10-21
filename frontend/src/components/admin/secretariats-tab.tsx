@@ -130,7 +130,7 @@ export function SecretariatsTab() {
         </Empty>
       ) : (
         <>
-          <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
+          <div className="hidden overflow-x-auto rounded-xl border border-border bg-card lg:block">
             <Table className="min-w-[36rem]">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
@@ -194,7 +194,7 @@ export function SecretariatsTab() {
             </Table>
           </div>
 
-          <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card md:hidden">
+          <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card lg:hidden">
             {secretariats.map((secretariat) => (
               <div key={secretariat.id} className={cn("flex flex-col gap-3 p-4", !secretariat.active && "opacity-60")}>
                 <div className="flex items-center gap-2.5">
