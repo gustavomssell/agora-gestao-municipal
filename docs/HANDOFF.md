@@ -1,16 +1,16 @@
 # Handoff — responsividade mobile/tablet
 
-Última atualização: 2026-10-20
+Última atualização: 2026-10-21
 
 ## Estado atual
 
 - Branch de trabalho: `fix/responsividade-mobile`
-- Commit base: `4588a24` (`release: v0.1.2`)
-- Alterações desta etapa commitadas nesta branch; sem push.
+- Último commit: `b0f1b08` (`fix(ui): improve responsive layout on mobile and tablet`)
+- Ajustes desta rodada estão no working tree, ainda sem commit e sem push.
 - Frontend validado com `npm run lint` (0 erros, 13 warnings) e `npm run build` (sucesso).
-- Backend não foi alterado nesta etapa.
-- API local em `:8090` e Vite em `:5173`.
-- O Chrome DevTools MCP perdeu a conexão ao final; se for retomar a inspeção visual, reiniciar o navegador/MCP.
+- Backend validado com `go test ./...` (sucesso); não foi alterado.
+- Ambiente local ativo: Docker Desktop + Postgres `agora-postgres` (`:5434`), API (`:8090`) e Vite (`:5173`).
+- Chrome DevTools MCP reconectado e usado na validação visual.
 
 ## O que foi ajustado
 
@@ -20,24 +20,26 @@
 - Dashboard: hero em coluna única até `lg`; filtros e botão ocupam a largura no mobile.
 - Kanban: 2 colunas em tablet e 3 em desktop; filtros full-width no mobile.
 - Administração: abas com wrap; lista de usuários/secretarias em cards até `lg`; coluna Cargo só em `xl`.
+- Auditoria e perfis: matriz de permissões e trilha de auditoria em cards até `xl`, com tabela apenas em telas largas; entidade e IP só aparecem em `2xl` na tabela de auditoria.
+- Filtros da auditoria ocupam a largura no mobile.
 - Projeto: abas com scroll horizontal e gradiente de affordance; checklist documental empilhado no mobile.
 - Cronograma: botão e filtro full-width no mobile.
+- Portal público: badge de status do hero com texto branco e contraste adequado.
 
 ## Validação visual feita
 
-- 320 px: login, painel, projetos, cronograma, kanban, administração, projeto/documentos, relatórios e portal público.
-- 768 px: painel, kanban, administração, login.
-- 1024 px: administração.
+- 320 px: relatórios e auditoria (demais rotas já validadas na rodada anterior).
+- 390 px: painel, projetos, kanban, cronograma, relatórios, administração, perfil, projeto e portal público.
+- 768 px: perfis e auditoria da administração (demais rotas já validadas).
+- 1024 px: auditoria da administração.
+- 1280 px: tabelas de perfis e auditoria.
+- 1440 px: painel, kanban, relatórios, administração, portal público e detalhe público.
 - Sem overflow horizontal de documento nas rotas verificadas.
 
 ## Pendências para continuar
 
-1. Revalidar em 390 px e 1440 px.
-2. Revisar o restante da página de relatórios em 320/768.
-3. Avaliar as tabelas de auditoria e perfis em 768/1024; elas ainda usam scroll horizontal.
-4. Corrigir contraste do badge de status no hero do portal público.
-5. Rodar CI após push e confirmar `main`/`develop`.
-6. Pendências externas de segurança: purge do commit antigo no GitHub e resolução do alerta GitGuardian.
+1. Revisar e commitar os ajustes desta rodada; depois seguir Gitflow e rodar CI em `develop`/`main`.
+2. Pendências externas de segurança: purge do commit antigo no GitHub e resolução do alerta GitGuardian.
 
 ## Comandos úteis
 
