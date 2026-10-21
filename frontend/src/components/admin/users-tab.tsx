@@ -204,13 +204,13 @@ export function UsersTab() {
         </Empty>
       ) : (
         <>
-          <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
+          <div className="hidden overflow-x-auto rounded-xl border border-border bg-card lg:block">
             <Table className="min-w-[42rem]">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead>Usuário</TableHead>
                 <TableHead className="hidden md:table-cell">Secretaria</TableHead>
-                <TableHead className="hidden lg:table-cell">Cargo</TableHead>
+                <TableHead className="hidden xl:table-cell">Cargo</TableHead>
                 <TableHead>Perfil</TableHead>
                 <TableHead className="w-24 text-center">Ativo</TableHead>
                 <TableHead className="w-12" />
@@ -225,10 +225,10 @@ export function UsersTab() {
                       <span className="text-xs text-muted-foreground">{user.email}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden text-xs text-muted-foreground md:table-cell">
+                  <TableCell className="hidden max-w-56 truncate text-xs text-muted-foreground md:table-cell">
                     {user.secretariat ? `${user.secretariat.acronym} · ${user.secretariat.name}` : "—"}
                   </TableCell>
-                  <TableCell className="hidden text-xs text-muted-foreground lg:table-cell">{user.cargo?.name ?? "—"}</TableCell>
+                  <TableCell className="hidden text-xs text-muted-foreground xl:table-cell">{user.cargo?.name ?? "—"}</TableCell>
                   <TableCell>
                     <RoleBadge role={user.role} />
                   </TableCell>
@@ -260,7 +260,7 @@ export function UsersTab() {
           </Table>
           </div>
 
-          <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card md:hidden">
+          <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card lg:hidden">
             {users.map((user) => (
               <div key={user.id} className={cn("flex flex-col gap-3 p-4", !user.active && "opacity-60")}>
                 <div className="flex items-start justify-between gap-3">

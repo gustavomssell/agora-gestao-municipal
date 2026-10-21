@@ -56,7 +56,12 @@ export function NotificationBell() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative" aria-label={`Notificações${unread ? `, ${unread} não lidas` : ""}`}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative size-10 sm:size-8"
+          aria-label={`Notificações${unread ? `, ${unread} não lidas` : ""}`}
+        >
           <Bell />
           {unread > 0 ? (
             <span className="absolute right-1.5 top-1.5 grid min-w-4 place-items-center rounded-full bg-destructive px-1 font-mono text-[0.55rem] leading-4 text-white">

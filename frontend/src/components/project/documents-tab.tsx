@@ -100,7 +100,7 @@ export function DocumentsTab({ projectId }: { projectId: number }) {
           ) : (
             <ul className="divide-y divide-border">
               {items.map((item) => (
-                <li key={item.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                <li key={item.id} className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-sm">{item.name}</p>
@@ -113,39 +113,41 @@ export function DocumentsTab({ projectId }: { projectId: number }) {
                       {item.note ? ` · ${item.note}` : ""}
                     </p>
                   </div>
-                  {item.attachment ? (
-                    <Button size="sm" variant="ghost" onClick={() => downloadAttachment(item.attachment!)}>
-                      <Download data-icon="inline-start" />
-                      Anexo
-                    </Button>
-                  ) : null}
-                  {data?.can_edit ? (
-                    <Select
-                      value={item.status}
-                      onValueChange={(value) => updateMutation.mutate({ id: item.id, payload: payloadFrom(item, value) })}
-                    >
-                      <SelectTrigger size="sm" className="w-36">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {statuses.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <span className={`border px-2 py-0.5 font-mono text-[0.6rem] uppercase tracking-[0.1em] ${statusClass[item.status]}`}>
-                      {item.status}
-                    </span>
-                  )}
-                  {data?.can_edit ? (
-                    <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => setEditing(item)}>Editar</Button>
-                      <Button size="icon-sm" variant="ghost" onClick={() => removeMutation.mutate(item.id)} aria-label="Excluir item">
-                        <Trash2 />
+                  <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                    {item.attachment ? (
+                      <Button size="sm" variant="ghost" onClick={() => downloadAttachment(item.attachment!)}>
+                        <Download data-icon="inline-start" />
+                        Anexo
                       </Button>
-                    </div>
-                  ) : null}
+                    ) : null}
+                    {data?.can_edit ? (
+                      <Select
+                        value={item.status}
+                        onValueChange={(value) => updateMutation.mutate({ id: item.id, payload: payloadFrom(item, value) })}
+                      >
+                        <SelectTrigger size="sm" className="w-32 sm:w-36">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {statuses.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className={`border px-2 py-0.5 font-mono text-[0.6rem] uppercase tracking-[0.1em] ${statusClass[item.status]}`}>
+                        {item.status}
+                      </span>
+                    )}
+                    {data?.can_edit ? (
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => setEditing(item)}>Editar</Button>
+                        <Button size="icon-sm" variant="ghost" onClick={() => removeMutation.mutate(item.id)} aria-label="Excluir item">
+                          <Trash2 />
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
                 </li>
               ))}
             </ul>

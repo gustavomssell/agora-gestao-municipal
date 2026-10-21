@@ -2,6 +2,16 @@
 
 Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 
+## [Não lançado]
+
+### Corrigido
+
+- Responsividade do header, painel, kanban, administração, projeto, cronograma e formulários em telas mobile/tablet.
+- Alvos de toque ampliados para 44 px em dispositivos com ponteiro grosso.
+- Abas administrativas com quebra de linha e abas de projeto com indicação de rolagem horizontal.
+- Checklist documental reorganizado em coluna no mobile.
+- Tabelas administrativas substituídas por cards até `lg`.
+
 ## [0.1.2] - 2026-10-20
 
 ### Segurança

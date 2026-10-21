@@ -31,7 +31,10 @@ export default function AdminPage() {
       />
 
       <Tabs value={tab} onValueChange={handleTabChange} className="gap-5">
-        <TabsList className="max-w-full overflow-x-auto">
+        <TabsList
+          className="w-full flex-wrap justify-start gap-1 [&_[data-slot=tabs-trigger]]:h-9 [&_[data-slot=tabs-trigger]]:flex-none"
+          style={{ height: "auto" }}
+        >
           <TabsTrigger value="usuarios">Usuários</TabsTrigger>
           <TabsTrigger value="secretarias">Secretarias</TabsTrigger>
           <TabsTrigger value="cargos">Cargos</TabsTrigger>
