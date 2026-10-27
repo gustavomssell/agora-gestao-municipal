@@ -29,6 +29,7 @@ const statusBar: Record<ProjectStatus, string> = {
   NAO_INICIADO: "bg-status-neutral",
   EM_ANDAMENTO: "bg-status-progress",
   EM_ATRASO: "bg-status-late",
+  AGUARDANDO_APROVACAO: "bg-chart-4",
   CONCLUIDO: "bg-status-done",
   CONCLUIDO_COM_ATRASO: "bg-status-warn",
   CANCELADO: "bg-status-muted",

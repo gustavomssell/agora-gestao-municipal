@@ -23,7 +23,7 @@ const steps = [
   },
   {
     title: "Divida em atividades",
-    body: "Na aba Atividades, crie entregas com início e término previstos. Iniciar a primeira atividade coloca o projeto em andamento; concluir todas conclui o projeto.",
+    body: "Na aba Atividades, crie entregas com início e término previstos e, se necessário, dependências. Iniciar a primeira atividade coloca o projeto em andamento; ao concluir todas, o projeto aguarda as aprovações para ser concluído.",
   },
   {
     title: "Avalie riscos e planos",
@@ -51,7 +51,9 @@ const ruleGroups = [
     items: [
       "Alterar datas de projeto ou atividade exige justificativa e notifica os envolvidos.",
       "O encaminhamento muda a secretaria responsável, mantém as envolvidas e registra autor, destino e motivo.",
-      "A situação do projeto é derivada das atividades; suspender ou cancelar interrompe o cômputo de atraso.",
+      "A situação do projeto é derivada das atividades, prazos e aprovações; suspender ou cancelar congela a situação e retomar recalcula.",
+      "Atividades podem ser suspensas, canceladas e retomadas. Canceladas saem do progresso; suspensas bloqueiam a conclusão.",
+      "Uma atividade depende da conclusão das predecessoras para iniciar ou concluir.",
     ],
   },
   {

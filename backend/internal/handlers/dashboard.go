@@ -12,6 +12,7 @@ import (
 
 func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	user := middleware.CurrentUser(r)
+	_ = service.RefreshTenantProjectStatuses(h.DB, user.TenantID)
 	q := h.projectScope(user)
 	if r.URL.Query().Get("mine") == "true" && !user.IsAdmin() && !user.IsGoverno() {
 		if user.SecretariatID != nil {
@@ -40,6 +41,7 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		Total             int     `json:"total"`
 		Active            int     `json:"active"`
 		InProgress        int     `json:"in_progress"`
+		AwaitingApproval  int     `json:"awaiting_approval"`
 		Late              int     `json:"late"`
 		Completed         int     `json:"completed"`
 		CompletedLate     int     `json:"completed_late"`
@@ -82,6 +84,9 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		case models.StatusEmAndamento:
 			sum.InProgress++
 			sum.Active++
+		case models.StatusAguardandoAprovacao:
+			sum.AwaitingApproval++
+			sum.Active++
 		case models.StatusNaoIniciado:
 			sum.Active++
 			sum.NotStarted++
@@ -116,6 +121,9 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	}
 	for i := range activities {
 		a := &activities[i]
+		if a.Status == models.ActivityCancelada {
+			continue
+		}
 		sum.ActivitiesTotal++
 		if a.Status == models.ActivityConcluida || a.Status == models.ActivityConcluidaAtraso {
 			sum.ActivitiesDone++
@@ -171,6 +179,7 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		Late           int     `json:"late"`
 		Completed      int     `json:"completed"`
 		InProgress     int     `json:"in_progress"`
+		Awaiting       int     `json:"awaiting_approval"`
 		Progress       float64 `json:"progress"`
 		BudgetPlanned  float64 `json:"budget_planned"`
 		BudgetExecuted float64 `json:"budget_executed"`
@@ -205,6 +214,8 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 			agg.InProgress++
 		case models.StatusEmAndamento:
 			agg.InProgress++
+		case models.StatusAguardandoAprovacao:
+			agg.Awaiting++
 		case models.StatusConcluido, models.StatusConcluidoAtraso:
 			agg.Completed++
 		}
@@ -225,6 +236,7 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		p := projects[i]
 		if p.PlannedEnd != nil && !p.PlannedEnd.Before(startOfDay(now)) && !p.PlannedEnd.After(upcomingLimit) &&
 			p.Status != models.StatusConcluido && p.Status != models.StatusConcluidoAtraso &&
+			p.Status != models.StatusAguardandoAprovacao &&
 			p.Status != models.StatusCancelado && p.Status != models.StatusSuspenso {
 			upcoming = append(upcoming, p)
 		}
@@ -256,6 +268,7 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 			"total":              sum.Total,
 			"active":             sum.Active,
 			"in_progress":        sum.InProgress,
+			"awaiting_approval":  sum.AwaitingApproval,
 			"late":               sum.Late,
 			"completed":          sum.Completed,
 			"completed_late":     sum.CompletedLate,

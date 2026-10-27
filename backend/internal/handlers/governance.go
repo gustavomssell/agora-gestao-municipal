@@ -8,27 +8,14 @@ import (
 
 	"agora/backend/internal/middleware"
 	"agora/backend/internal/models"
+	"agora/backend/internal/service"
 
 	"github.com/go-chi/chi/v5"
+	"gorm.io/gorm"
 )
 
-var approvalStages = []string{"TECNICA", "ORCAMENTARIA", "JURIDICA"}
-
 func (h *Handler) ensureApprovalChecklist(project *models.Project) {
-	for _, stage := range approvalStages {
-		var count int64
-		h.DB.Model(&models.ProjectApproval{}).
-			Where("project_id = ? AND stage = ?", project.ID, stage).
-			Count(&count)
-		if count == 0 {
-			_ = h.DB.Create(&models.ProjectApproval{
-				TenantID:  project.TenantID,
-				ProjectID: project.ID,
-				Stage:     stage,
-				Status:    "PENDENTE",
-			}).Error
-		}
-	}
+	_ = service.EnsureApprovalChecklist(h.DB, project)
 }
 
 func (h *Handler) ListApprovals(w http.ResponseWriter, r *http.Request) {
@@ -94,13 +81,13 @@ func (h *Handler) DecideApproval(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusBadRequest, "informe o nome do responsável pela assinatura")
 		return
 	}
-	for i, stage := range approvalStages {
+	for i, stage := range models.ApprovalStages {
 		if stage != approval.Stage {
 			continue
 		}
 		if i > 0 {
 			var previous models.ProjectApproval
-			h.DB.Where("project_id = ? AND stage = ?", approval.ProjectID, approvalStages[i-1]).First(&previous)
+			h.DB.Where("project_id = ? AND stage = ?", approval.ProjectID, models.ApprovalStages[i-1]).First(&previous)
 			if previous.Status != "APROVADO" {
 				fail(w, http.StatusBadRequest, "conclua a etapa anterior antes de decidir esta")
 				return
@@ -119,6 +106,7 @@ func (h *Handler) DecideApproval(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusInternalServerError, "não foi possível registrar a decisão")
 		return
 	}
+	_ = service.RecomputeProject(h.DB, project.ID)
 	action := "APROVACAO_APROVADA"
 	if req.Status == "REJEITADO" {
 		action = "APROVACAO_REJEITADA"
@@ -144,11 +132,27 @@ func (h *Handler) ResetApproval(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusNotFound, "etapa de aprovação não encontrada")
 		return
 	}
-	h.DB.Model(&approval).Updates(map[string]any{
-		"status": "PENDENTE", "comment": "", "signature": "",
-		"approver_id": nil, "decided_at": nil,
+	stages := []string{approval.Stage}
+	for i, stage := range models.ApprovalStages {
+		if stage == approval.Stage {
+			stages = models.ApprovalStages[i:]
+			break
+		}
+	}
+	err := h.DB.Transaction(func(tx *gorm.DB) error {
+		return tx.Model(&models.ProjectApproval{}).
+			Where("project_id = ? AND stage IN ?", approval.ProjectID, stages).
+			Updates(map[string]any{
+				"status": "PENDENTE", "comment": "", "signature": "",
+				"approver_id": nil, "decided_at": nil,
+			}).Error
 	})
+	if err != nil {
+		fail(w, http.StatusInternalServerError, "não foi possível reabrir a etapa")
+		return
+	}
+	_ = service.RecomputeProject(h.DB, approval.ProjectID)
 	h.audit(r, "APROVACAO_REABERTA", "projeto", approval.ProjectID,
-		fmt.Sprintf("Etapa %s reaberta pelo administrador", approval.Stage))
+		fmt.Sprintf("Etapa %s e posteriores reabertas pelo administrador", approval.Stage))
 	respond(w, http.StatusOK, map[string]string{"message": "etapa reaberta"})
 }

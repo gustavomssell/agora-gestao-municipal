@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom"
 import {
   BookOpen,
@@ -227,8 +227,8 @@ function UserMenu() {
           <DropdownMenuSeparator />
           <DropdownMenuItem
             variant="destructive"
-            onClick={() => {
-              logout()
+            onClick={async () => {
+              await logout()
               navigate("/login", { replace: true })
             }}
           >
@@ -299,7 +299,11 @@ export function AppShell() {
         </header>
 
         <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-8 md:px-8">
-          <Outlet />
+          <Suspense
+            fallback={<div className="py-16 text-center text-sm text-muted-foreground">Carregando…</div>}
+          >
+            <Outlet />
+          </Suspense>
         </main>
 
         <footer className="border-t border-border/60 px-4 py-4 md:px-8">
