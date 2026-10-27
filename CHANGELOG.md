@@ -2,6 +2,35 @@
 
 Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 
+## [Não lançado]
+
+### Segurança
+
+- Migrações SQL versionadas em `backend/migrations`, com controle em `schema_migrations`, substituindo `AutoMigrate`.
+- JWT movido do `localStorage` para cookie `HttpOnly`, com expiração de 16 horas e `Secure` em produção.
+- Proteção CSRF por token vinculado à sessão para requisições de escrita.
+
+### Alterado
+
+- WebSocket autenticado pelo cookie de sessão, sem token na query string.
+- Frontend dividido por rota com carregamento sob demanda, reduzindo o chunk inicial de ~1,05 MB para ~259 kB.
+- Status do projeto derivado de atividades, prazos e aprovações, com o novo estado `AGUARDANDO_APROVACAO`.
+- Alteração manual de status restrita a cancelar, suspender e retomar; a retomada recalcula o status.
+- Ações de atividade para suspender, cancelar e retomar.
+- Kanban com quatro colunas, incluindo aguardando aprovação.
+
+### Corrigido
+
+- Projetos só concluem com todas as atividades não canceladas terminadas e as etapas técnica, orçamentária e jurídica aprovadas.
+- Atividades canceladas deixam de contar no progresso e na conclusão; atividades suspensas bloqueiam a conclusão.
+- Início e conclusão de atividades respeitam dependências; predecessor cancelado é ignorado.
+- Reabertura de atividade é bloqueada quando sucessoras já iniciaram, exige perfil administrador e não pode ser contornada pelas ações de início.
+- Retomar uma atividade suspensa ou cancelada preserva o início real já registrado.
+- A exclusão de uma atividade remove suas dependências.
+- Encaminhamento entre secretarias exige permissão própria, independente da edição do projeto.
+- Status derivado é atualizado também nas leituras de dashboard, kanban, gantt, relatórios, alertas e portal público.
+- Decisão e reabertura de aprovação recalculam o status do projeto.
+
 ## [0.1.2] - 2026-10-20
 
 ### Segurança

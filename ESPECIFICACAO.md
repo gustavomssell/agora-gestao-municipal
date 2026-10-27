@@ -52,7 +52,7 @@ Uma única fonte de verdade por projeto, com:
 | Módulo | Descrição |
 |---|---|
 | Multi-tenant | Várias prefeituras isoladas na mesma instância |
-| Autenticação | Login por prefeitura + e-mail + senha, JWT, troca de senha |
+| Autenticação | Login por prefeitura + e-mail + senha, JWT em cookie, CSRF, troca de senha |
 | Dashboard | Indicadores, gráficos, projetos em atraso, próximos prazos |
 | Projetos | Cadastro, edição, exclusão, status, prioridade, orçamento, plano de governo |
 | Atividades | Cadastro, execução, prazos previstos/reais, conclusão |
@@ -187,19 +187,21 @@ progresso = atividades concluídas ÷ total de atividades cadastradas × 100
 - Datas reais não são preenchidas manualmente no projeto; vêm das atividades.
 
 ### RN-06 — Status do projeto
-Status possíveis: `Não iniciado`, `Em andamento`, `Em atraso`, `Concluído`, `Concluído com atraso`, `Cancelado`, `Suspenso`.
+Status possíveis: `Não iniciado`, `Em andamento`, `Em atraso`, `Aguardando aprovação`, `Concluído`, `Concluído com atraso`, `Cancelado`, `Suspenso`.
 
 Regras de cálculo automático:
 
 1. Se o projeto estiver cancelado ou suspenso, o status manual é preservado.
-2. Todas as atividades concluídas:
+2. Atividades canceladas são ignoradas no total e no progresso. Atividades suspensas contam no total e impedem a conclusão.
+3. Todas as atividades não canceladas concluídas:
+   - se alguma etapa de aprovação (`TÉCNICA`, `ORÇAMENTÁRIA`, `JURÍDICA`) não estiver aprovada → **Aguardando aprovação**;
    - alguma conclusão após o prazo ou término real após o término previsto → **Concluído com atraso**;
    - caso contrário → **Concluído**.
-3. Data atual após o término previsto e projeto não concluído → **Em atraso**.
-4. Existe atividade iniciada → **Em andamento**.
-5. Caso contrário → **Não iniciado**.
+4. Data atual após o término previsto e projeto não concluído → **Em atraso**.
+5. Existe atividade iniciada → **Em andamento**.
+6. Caso contrário → **Não iniciado**.
 
-O usuário pode cancelar, suspender e retomar (recalcular) o projeto. O status não pode ser escolhido livremente.
+O usuário pode cancelar, suspender e retomar (recalcular) o projeto. O status não pode ser escolhido livremente. Projetos legados sem etapas de aprovação cadastradas são tratados como aprovados.
 
 ### RN-07 — Status das atividades
 Status possíveis: `Não iniciada`, `Em andamento`, `Em atraso`, `Concluída`, `Concluída com atraso`, `Cancelada`, `Suspensa`.
@@ -208,7 +210,15 @@ Status possíveis: `Não iniciada`, `Em andamento`, `Em atraso`, `Concluída`, `
 - Conclusão após o término previsto vira **Concluída com atraso**.
 - Início registra a data real de início.
 - Atividade não concluída com término previsto no passado vira **Em atraso**.
-- Cancelada e suspensa são estados manuais e não entram no progresso como concluídas.
+- Cancelada e suspensa são estados manuais. Cancelada sai do total e do progresso; suspensa continua no total e bloqueia a conclusão do projeto.
+- Suspender, cancelar e retomar uma atividade ficam disponíveis nas ações da atividade. Retomar valida as dependências antes de reiniciar e preserva o início real já registrado.
+- Reabrir uma atividade concluída é exclusivo do administrador.
+
+### RN-07A — Dependências entre atividades
+- Uma atividade com predecessora não concluída não pode ser iniciada nem concluída. Predecessora cancelada é ignorada.
+- Uma atividade concluída não pode ser reaberta se alguma sucessora já tiver sido iniciada.
+- Não é possível criar dependência para uma sucessora já iniciada, duplicada ou que forme ciclo.
+- A exclusão de uma atividade remove suas dependências.
 
 ### RN-08 — Alteração de prazos
 Toda alteração de prazo previsto (do projeto ou de uma atividade) exige justificativa obrigatória. O sistema registra:
@@ -387,7 +397,7 @@ Tenant 1─N Secretariat 1─N User
 
 **Prioridade:** `BAIXA`, `MEDIA`, `ALTA`, `CRITICA`
 
-**Status do projeto:** `NAO_INICIADO`, `EM_ANDAMENTO`, `EM_ATRASO`, `CONCLUIDO`, `CONCLUIDO_COM_ATRASO`, `CANCELADO`, `SUSPENSO`
+**Status do projeto:** `NAO_INICIADO`, `EM_ANDAMENTO`, `EM_ATRASO`, `AGUARDANDO_APROVACAO`, `CONCLUIDO`, `CONCLUIDO_COM_ATRASO`, `CANCELADO`, `SUSPENSO`
 
 **Status de atividade:** `NAO_INICIADA`, `EM_ANDAMENTO`, `EM_ATRASO`, `CONCLUIDA`, `CONCLUIDA_COM_ATRASO`, `CANCELADA`, `SUSPENSA`
 
@@ -428,12 +438,13 @@ poc-ERP/
 ├── backend/
 │   ├── main.go
 │   ├── data/                # uploads (não versionados)
+│   ├── migrations/          # migrações SQL versionadas
 │   └── internal/
-│       ├── auth/            # JWT e senha
+│       ├── auth/            # JWT, CSRF e senha
 │       ├── config/
-│       ├── database/        # conexão, migração e seed
+│       ├── database/        # conexão, runner de migrações e seed
 │       ├── handlers/        # endpoints HTTP
-│       ├── middleware/      # autenticação e papéis
+│       ├── middleware/      # autenticação, CSRF e papéis
 │       ├── models/
 │       ├── realtime/        # hub WebSocket por tenant
 │       ├── service/         # regras de status e progresso
@@ -451,9 +462,9 @@ poc-ERP/
 ### 7.3 Decisões
 
 - **PostgreSQL** como banco único, isolamento por `tenant_id` em todas as consultas. O desenvolvimento usa Docker Compose com volume persistente.
-- **Tempo real por WebSocket** nativo, com hub em memória separado por tenant. Eventos publicados: `project.changed`, `settings.changed`, `notification.created` e `notification.read`. O frontend escuta em `/api/ws?token=...` e invalida queries específicas do TanStack Query, sem refetch manual.
+- **Tempo real por WebSocket** nativo, com hub em memória separado por tenant. Eventos publicados: `project.changed`, `settings.changed`, `notification.created` e `notification.read`. O frontend escuta em `/api/ws` usando o cookie de sessão e invalida queries específicas do TanStack Query, sem refetch manual.
 - **TanStack Query** como única fonte de estado de servidor (cache, stale time, invalidação e optimistic updates). Estado de UI fica local.
-- **JWT em localStorage** na POC. Em produção: cookie HttpOnly + refresh token + CSRF.
+- **JWT em cookie `HttpOnly`** com `SameSite=Lax` e `Secure` em produção. Requisições de escrita usam token CSRF vinculado à sessão. Refresh token continua como evolução.
 - **Anexos em disco** (`backend/data/uploads`) na POC. Em produção: storage de objetos.
 - **REST** sob `/api`, com erros em JSON `{ "error": "mensagem" }`; WebSocket em `/api/ws`.
 - **CORS** restrito às origens do frontend; a origem também é validada no upgrade do WebSocket.
@@ -464,6 +475,9 @@ poc-ERP/
 
 - Senhas com bcrypt.
 - Nenhuma resposta expõe hash de senha.
+- JWT de sessão em cookie `HttpOnly`; o frontend não armazena o token.
+- Token CSRF obrigatório em requisições de escrita autenticadas por cookie.
+- CORS com credenciais permitido apenas nas origens configuradas.
 - Autorização checada no backend em toda operação (nunca só na UI).
 - Escopo de tenant aplicado em todas as consultas.
 - Validação de arquivos por tamanho e extensão.
@@ -483,7 +497,7 @@ Prefixo: `/api`
 | Método | Rota | Descrição |
 |---|---|---|
 | GET | `/public/tenants` | Lista prefeituras ativas para o login |
-| POST | `/auth/login` | Login por prefeitura, e-mail e senha |
+| POST | `/auth/login` | Login por prefeitura, e-mail e senha; define cookie de sessão e retorna token CSRF |
 | GET | `/health` | Saúde do serviço |
 
 ### 8.2 Autenticados
@@ -491,6 +505,8 @@ Prefixo: `/api`
 | Método | Rota | Perfil | Descrição |
 |---|---|---|---|
 | GET | `/auth/me` | Todos | Usuário, tenant e permissões |
+| GET | `/auth/csrf` | Todos | Retorna o token CSRF da sessão atual |
+| POST | `/auth/logout` | Todos | Encerra a sessão e remove o cookie |
 | PUT | `/auth/profile` | Todos | Atualiza o próprio nome |
 | POST | `/auth/change-password` | Todos | Troca de senha |
 | GET | `/dashboard` | Todos | Indicadores, gráficos e listas |
@@ -547,7 +563,7 @@ Prefixo: `/api`
 
 ### 8.3 Tempo real (WebSocket)
 
-Conexão: `ws://localhost:8090/api/ws?token=<JWT>`. O token é validado no upgrade; a conexão é isolada por tenant.
+Conexão: `ws://localhost:8090/api/ws` com o cookie de sessão. O token é validado no upgrade; a conexão é isolada por tenant.
 
 | Evento | Origem | Uso no frontend |
 |---|---|---|
@@ -798,7 +814,7 @@ npm run dev
 
 Backend em `http://localhost:8090`, frontend em `http://localhost:5173`, PostgreSQL em `localhost:5434` (Docker Compose).
 
-Variáveis do backend: `PORT`, `DATABASE_URL`, `UPLOAD_DIR`, `JWT_SECRET`, `ALLOWED_ORIGINS`, `SEED` (ver `backend/.env.example`). O WebSocket fica em `ws://localhost:8090/api/ws?token=<JWT>`.
+Variáveis do backend: `PORT`, `DATABASE_URL`, `UPLOAD_DIR`, `JWT_SECRET`, `ALLOWED_ORIGINS`, `SEED` (ver `backend/.env.example`). Migrações são aplicadas de `backend/migrations` no boot. O WebSocket fica em `ws://localhost:8090/api/ws` e usa o cookie de sessão.
 
 ---
 
