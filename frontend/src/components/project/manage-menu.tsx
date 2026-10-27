@@ -60,7 +60,7 @@ export function ProjectManageMenu({ project, permissions, secretariats }: Manage
     defaultValues: { status: "", note: "" },
   })
 
-  if (!permissions.can_manage && !permissions.can_delete) return null
+  if (!permissions.can_manage && !permissions.can_transfer && !permissions.can_delete) return null
 
   function refresh() {
     queryClient.invalidateQueries({ queryKey: ["project", project.id] })
@@ -71,12 +71,13 @@ export function ProjectManageMenu({ project, permissions, secretariats }: Manage
     queryClient.invalidateQueries({ queryKey: ["gantt"] })
   }
 
-  const statusOptions = [
-    { value: "EM_ANDAMENTO", label: "Retomar / em andamento", icon: PlayCircle },
-    { value: "NAO_INICIADO", label: "Marcar como não iniciado", icon: PlayCircle },
-    { value: "SUSPENSO", label: "Suspender", icon: PauseCircle },
-    { value: "CANCELADO", label: "Cancelar projeto", icon: XCircle },
-  ].filter((option) => option.value !== project.status)
+  const statusOptions =
+    project.status === "CANCELADO" || project.status === "SUSPENSO"
+      ? [{ value: "EM_ANDAMENTO", label: "Retomar projeto", icon: PlayCircle }]
+      : [
+          { value: "SUSPENSO", label: "Suspender", icon: PauseCircle },
+          { value: "CANCELADO", label: "Cancelar projeto", icon: XCircle },
+        ]
 
   async function onTransfer(values: TransferFormValues) {
     setPending(true)
@@ -136,7 +137,7 @@ export function ProjectManageMenu({ project, permissions, secretariats }: Manage
           <DropdownMenuLabel>{project.code}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            disabled={!permissions.can_manage}
+            disabled={!permissions.can_transfer}
             onSelect={() => {
               transferForm.reset({ target_secretariat_id: "", note: "" })
               setDialog("transfer")
@@ -229,7 +230,7 @@ export function ProjectManageMenu({ project, permissions, secretariats }: Manage
             <DialogHeader>
               <DialogTitle>Alterar situação</DialogTitle>
               <DialogDescription>
-                Suspender ou cancelar interrompe o cômputo de atraso. As atividades permanecem registradas.
+                Suspender ou cancelar congela a situação derivada das atividades. Ao retomar, o sistema recalcula o andamento e o atraso.
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-4">

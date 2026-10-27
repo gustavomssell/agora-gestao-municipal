@@ -11,6 +11,7 @@ import (
 	"agora/backend/internal/service"
 
 	"github.com/go-chi/chi/v5"
+	"gorm.io/gorm"
 )
 
 type activityRequest struct {
@@ -33,6 +34,7 @@ func (h *Handler) ListActivities(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusNotFound, "projeto não encontrado")
 		return
 	}
+	_ = service.RefreshProjectStatus(h.DB, project.ID)
 	var activities []models.Activity
 	if err := h.DB.Where("project_id = ?", project.ID).
 		Order("planned_start asc, \"order\" asc, id asc").Find(&activities).Error; err != nil {
@@ -161,13 +163,43 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request) {
 	realStart := activity.RealStart
 	realEnd := activity.RealEnd
 	status := activity.Status
+	wasCompleted := activity.Status == models.ActivityConcluida || activity.Status == models.ActivityConcluidaAtraso
+	wasStarted := wasCompleted || activity.RealStart != nil ||
+		activity.Status == models.ActivityEmAndamento || activity.Status == models.ActivityEmAtraso
+	if activity.Status == models.ActivityCancelada || activity.Status == models.ActivitySuspensa {
+		wasStarted = false
+	}
 
 	switch req.Action {
 	case "start":
-		realStart = &now
+		if wasCompleted && !user.IsAdmin() {
+			fail(w, http.StatusForbidden, "apenas o administrador pode reabrir uma atividade")
+			return
+		}
+		unmet, err := service.UnmetPredecessors(h.DB, project.ID, activity.ID, now)
+		if err != nil {
+			fail(w, http.StatusInternalServerError, "não foi possível validar as dependências")
+			return
+		}
+		if len(unmet) > 0 {
+			fail(w, http.StatusBadRequest, "conclua as atividades predecessoras antes de iniciar: "+strings.Join(unmet, ", "))
+			return
+		}
+		if realStart == nil {
+			realStart = &now
+		}
 		realEnd = nil
 		status = models.ActivityEmAndamento
 	case "complete":
+		unmet, err := service.UnmetPredecessors(h.DB, project.ID, activity.ID, now)
+		if err != nil {
+			fail(w, http.StatusInternalServerError, "não foi possível validar as dependências")
+			return
+		}
+		if len(unmet) > 0 {
+			fail(w, http.StatusBadRequest, "conclua as atividades predecessoras antes de concluir: "+strings.Join(unmet, ", "))
+			return
+		}
 		if realStart == nil {
 			realStart = &now
 		}
@@ -176,6 +208,15 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request) {
 	case "reopen":
 		if !user.IsAdmin() {
 			fail(w, http.StatusForbidden, "apenas o administrador pode reabrir uma atividade")
+			return
+		}
+		started, err := service.StartedSuccessors(h.DB, project.ID, activity.ID)
+		if err != nil {
+			fail(w, http.StatusInternalServerError, "não foi possível validar as dependências")
+			return
+		}
+		if len(started) > 0 {
+			fail(w, http.StatusBadRequest, "reabra primeiro as atividades sucessoras já iniciadas: "+strings.Join(started, ", "))
 			return
 		}
 		realEnd = nil
@@ -208,6 +249,17 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request) {
 			}
 			status = req.Status
 			if status == models.ActivityConcluida || status == models.ActivityConcluidaAtraso {
+				if !wasCompleted {
+					unmet, err := service.UnmetPredecessors(h.DB, project.ID, activity.ID, now)
+					if err != nil {
+						fail(w, http.StatusInternalServerError, "não foi possível validar as dependências")
+						return
+					}
+					if len(unmet) > 0 {
+						fail(w, http.StatusBadRequest, "conclua as atividades predecessoras antes de concluir: "+strings.Join(unmet, ", "))
+						return
+					}
+				}
 				if realEnd == nil {
 					realEnd = &now
 				}
@@ -222,6 +274,9 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request) {
 			}
 			if status == models.ActivityNaoIniciada {
 				realStart = nil
+				realEnd = nil
+			}
+			if status != models.ActivityConcluida && status != models.ActivityConcluidaAtraso {
 				realEnd = nil
 			}
 		}
@@ -246,6 +301,34 @@ func (h *Handler) UpdateActivity(w http.ResponseWriter, r *http.Request) {
 		activity.Order = req.Order
 	}
 	service.NormalizeActivity(activity, now)
+	isCompleted := activity.Status == models.ActivityConcluida || activity.Status == models.ActivityConcluidaAtraso
+	isStarted := activity.Status == models.ActivityEmAndamento || activity.Status == models.ActivityEmAtraso
+	if (!wasCompleted && isCompleted) || (!wasStarted && isStarted) {
+		unmet, err := service.UnmetPredecessors(h.DB, project.ID, activity.ID, now)
+		if err != nil {
+			fail(w, http.StatusInternalServerError, "não foi possível validar as dependências")
+			return
+		}
+		if len(unmet) > 0 {
+			action := "iniciar"
+			if isCompleted {
+				action = "concluir"
+			}
+			fail(w, http.StatusBadRequest, "conclua as atividades predecessoras antes de "+action+": "+strings.Join(unmet, ", "))
+			return
+		}
+	}
+	if wasCompleted && !isCompleted && activity.Status != models.ActivityCancelada && activity.Status != models.ActivitySuspensa {
+		started, err := service.StartedSuccessors(h.DB, project.ID, activity.ID)
+		if err != nil {
+			fail(w, http.StatusInternalServerError, "não foi possível validar as dependências")
+			return
+		}
+		if len(started) > 0 {
+			fail(w, http.StatusBadRequest, "reabra primeiro as atividades sucessoras já iniciadas: "+strings.Join(started, ", "))
+			return
+		}
+	}
 
 	if err := h.DB.Save(activity).Error; err != nil {
 		fail(w, http.StatusInternalServerError, "não foi possível atualizar a atividade")
@@ -288,7 +371,14 @@ func (h *Handler) DeleteActivity(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusForbidden, err.Error())
 		return
 	}
-	if err := h.DB.Delete(activity).Error; err != nil {
+	err = h.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("project_id = ? AND (predecessor_id = ? OR successor_id = ?)", project.ID, activity.ID, activity.ID).
+			Delete(&models.ActivityDependency{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(activity).Error
+	})
+	if err != nil {
 		fail(w, http.StatusInternalServerError, "não foi possível remover a atividade")
 		return
 	}

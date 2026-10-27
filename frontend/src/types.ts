@@ -6,6 +6,7 @@ export type ProjectStatus =
   | "NAO_INICIADO"
   | "EM_ANDAMENTO"
   | "EM_ATRASO"
+  | "AGUARDANDO_APROVACAO"
   | "CONCLUIDO"
   | "CONCLUIDO_COM_ATRASO"
   | "CANCELADO"
@@ -163,6 +164,7 @@ export interface Project {
 export interface ProjectPermissions {
   can_edit: boolean
   can_manage: boolean
+  can_transfer: boolean
   can_delete: boolean
   read_only: boolean
 }
@@ -503,7 +505,7 @@ export interface PublicProject {
 
 export interface PublicTransparency {
   tenant: Tenant
-  summary: { total: number; active: number; late: number; completed: number }
+  summary: { total: number; active: number; late: number; completed: number; awaiting_approval: number }
   projects: PublicProject[]
   secretariats: Secretariat[]
 }
@@ -582,6 +584,7 @@ export interface DashboardSummary {
   total: number
   active: number
   in_progress: number
+  awaiting_approval: number
   late: number
   completed: number
   completed_late: number
@@ -608,6 +611,7 @@ export interface SecretariatAggregate {
   late: number
   completed: number
   in_progress: number
+  awaiting_approval: number
   progress: number
   budget_planned: number
   budget_executed: number
@@ -625,7 +629,7 @@ export interface Dashboard {
 }
 
 export interface KanbanColumn {
-  key: "nao_iniciado" | "em_andamento" | "concluido"
+  key: "nao_iniciado" | "em_andamento" | "aguardando_aprovacao" | "concluido"
   title: string
   items: Project[]
 }
@@ -644,7 +648,7 @@ export interface ReportSummary {
 }
 
 export interface LoginResponse {
-  token: string
+  csrf_token: string
   user: User
   tenant: Tenant
 }

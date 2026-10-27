@@ -22,6 +22,8 @@ func statusLabel(s string) string {
 		return "Em andamento"
 	case models.StatusEmAtraso:
 		return "Em atraso"
+	case models.StatusAguardandoAprovacao:
+		return "Aguardando aprovação"
 	case models.StatusConcluido:
 		return "Concluído"
 	case models.StatusConcluidoAtraso:
@@ -77,6 +79,7 @@ func dateBR(t *time.Time) string {
 
 func (h *Handler) reportQuery(r *http.Request, window periodWindow) *gorm.DB {
 	user := middleware.CurrentUser(r)
+	_ = service.RefreshTenantProjectStatuses(h.DB, user.TenantID)
 	q := applyProjectPeriod(h.projectScope(user), window)
 
 	if search := strings.TrimSpace(r.URL.Query().Get("search")); search != "" {

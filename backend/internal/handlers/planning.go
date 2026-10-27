@@ -75,6 +75,14 @@ func (h *Handler) CreateDependency(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusBadRequest, "atividade inválida")
 		return
 	}
+	var successor models.Activity
+	h.DB.Where("project_id = ? AND id = ?", project.ID, req.SuccessorID).First(&successor)
+	if successor.RealStart != nil || successor.Status == models.ActivityEmAndamento ||
+		successor.Status == models.ActivityEmAtraso || successor.Status == models.ActivityConcluida ||
+		successor.Status == models.ActivityConcluidaAtraso {
+		fail(w, http.StatusBadRequest, "não é possível criar dependência para atividade já iniciada")
+		return
+	}
 	h.DB.Model(&models.ActivityDependency{}).
 		Where("project_id = ? AND predecessor_id = ? AND successor_id = ?", project.ID, req.PredecessorID, req.SuccessorID).
 		Count(&count)
