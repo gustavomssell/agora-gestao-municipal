@@ -205,6 +205,20 @@
   }
 }
 
+@media (pointer: coarse) and (max-width: 1023px) {
+  [data-slot="button"] {
+    min-height: 2.75rem;
+  }
+  [data-slot="button"][data-size^="icon"] {
+    min-width: 2.75rem;
+  }
+  [data-slot="tabs-trigger"],
+  [data-slot="select-trigger"],
+  [data-slot="input"] {
+    min-height: 2.75rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

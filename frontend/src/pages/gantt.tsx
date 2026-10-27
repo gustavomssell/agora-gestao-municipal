@@ -94,6 +94,7 @@ export default function GanttPage() {
           <>
             <Button
               variant="outline"
+              className="w-full sm:w-auto"
               disabled={!timeline || exporting}
               onClick={async () => {
                 if (!chartRef.current) return
@@ -123,7 +124,7 @@ export default function GanttPage() {
               {exporting ? "Gerando…" : "Baixar imagem"}
             </Button>
             <Select value={secretariatId} onValueChange={setSecretariatId}>
-              <SelectTrigger className="w-52" aria-label="Filtrar por secretaria">
+              <SelectTrigger className="w-full sm:w-52" aria-label="Filtrar por secretaria">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

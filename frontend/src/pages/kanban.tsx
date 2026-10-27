@@ -80,7 +80,7 @@ export default function KanbanPage() {
           />
         </div>
         <Select value={priority} onValueChange={setPriority}>
-          <SelectTrigger className="w-40 sm:w-44" aria-label="Filtrar por prioridade">
+          <SelectTrigger className="w-full sm:w-44" aria-label="Filtrar por prioridade">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -95,7 +95,7 @@ export default function KanbanPage() {
           </SelectContent>
         </Select>
         <Select value={secretariatId} onValueChange={setSecretariatId}>
-          <SelectTrigger className="w-40 sm:w-52" aria-label="Filtrar por secretaria">
+          <SelectTrigger className="w-full sm:w-52" aria-label="Filtrar por secretaria">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -112,14 +112,13 @@ export default function KanbanPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
             <Skeleton key={index} className="h-80 w-full" />
           ))}
         </div>
       ) : (
-        <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {columns.map((column) => (
+        <div className="grid items-start gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">          {columns.map((column) => (
             <section
               key={column.key}
               className={cn("flex flex-col gap-3 rounded-xl border border-t-2 border-border bg-muted/25 p-3", columnAccent[column.key])}

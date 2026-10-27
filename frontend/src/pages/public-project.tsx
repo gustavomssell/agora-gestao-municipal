@@ -2,7 +2,7 @@ import { Link, useParams } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
 import { ArrowLeft, Building2, CalendarDays, CheckCircle2, CircleDollarSign, Landmark, Target } from "lucide-react"
 import { api } from "@/lib/api"
-import { formatDate, formatMoney, formatPercent, formatRange, projectStatusClass, projectStatusLabels } from "@/lib/format"
+import { formatDate, formatMoney, formatPercent, formatRange, projectStatusLabels } from "@/lib/format"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -52,7 +52,7 @@ export default function PublicProjectPage() {
           </Link>
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-[0.65rem] uppercase tracking-[0.16em] text-white/60">{project.code}</span>
-            <span className={`border px-2 py-0.5 font-mono text-[0.6rem] uppercase tracking-[0.1em] ${projectStatusClass[project.status]}`}>
+            <span className="border border-white/25 bg-white/10 px-2 py-0.5 font-mono text-[0.6rem] uppercase tracking-[0.1em] text-white">
               {projectStatusLabels[project.status]}
             </span>
           </div>

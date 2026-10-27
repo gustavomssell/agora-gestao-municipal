@@ -13,7 +13,9 @@ import {
   Lightbulb,
   LogOut,
   Menu,
+  Moon,
   ShieldCheck,
+  Sun,
   UserRound,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth"
@@ -106,6 +108,7 @@ function NavItem({
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { me } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const isAdmin = me?.user.role === ROLES.ADMIN
 
   return (
@@ -165,6 +168,19 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <p className="mt-3 font-mono text-[0.6rem] uppercase tracking-[0.16em] text-sidebar-foreground/55">
           Ambiente de demonstração
         </p>
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="mt-3 flex w-full items-center justify-between gap-3 rounded-md border border-sidebar-border/60 px-3 py-2 text-sm text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground md:hidden"
+        >
+          <span className="flex items-center gap-2">
+            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            Tema
+          </span>
+          <span className="font-mono text-[0.6rem] uppercase tracking-[0.14em] text-sidebar-foreground/55">
+            {theme === "dark" ? "Escuro" : "Claro"}
+          </span>
+        </button>
       </div>
     </div>
   )
@@ -203,11 +219,11 @@ function UserMenu() {
                 {initials(me.user.name)}
               </AvatarFallback>
             </Avatar>
-            <span className="hidden flex-col items-start leading-tight md:flex">
+            <span className="hidden flex-col items-start leading-tight lg:flex">
               <span className="text-sm">{me.user.name}</span>
               <span className="text-xs text-muted-foreground">{roleLabels[me.user.role]}</span>
             </span>
-            <ChevronDown className="hidden size-4 text-muted-foreground md:block" />
+            <ChevronDown className="hidden size-4 text-muted-foreground lg:block" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
@@ -266,10 +282,10 @@ export function AppShell() {
       </aside>
 
       <div className="flex min-h-svh flex-col md:pl-64">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border/80 bg-background/85 px-4 backdrop-blur md:px-8">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border/80 bg-background/85 px-3 backdrop-blur sm:gap-3 sm:px-4 md:px-8">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden" aria-label="Abrir navegação">
+              <Button variant="ghost" size="icon" className="size-10 md:hidden" aria-label="Abrir navegação">
                 <Menu />
               </Button>
             </SheetTrigger>
@@ -281,19 +297,21 @@ export function AppShell() {
             </SheetContent>
           </Sheet>
 
-          <div className="flex min-w-0 flex-col">
-            <span className="font-mono text-[0.6rem] uppercase tracking-[0.18em] text-muted-foreground">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate whitespace-nowrap font-mono text-[0.6rem] uppercase tracking-[0.18em] text-muted-foreground">
               {section}
             </span>
             <span className="truncate text-sm font-medium">{title}</span>
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <GlobalSearch />
             <RealtimeStatus />
-            <ThemeToggle />
+            <div className="hidden sm:block">
+              <ThemeToggle />
+            </div>
             <NotificationBell />
-            <div className="mx-1 h-6 w-px bg-border" />
+            <div className="mx-1 hidden h-6 w-px bg-border sm:block" />
             <UserMenu />
           </div>
         </header>

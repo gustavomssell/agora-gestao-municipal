@@ -174,16 +174,24 @@ export default function ProjectDetailPage() {
       </header>
 
       <Tabs defaultValue="visao" className="gap-6">
-        <TabsList
-          variant="line"
-          className="h-auto w-full flex-nowrap justify-start gap-x-5 overflow-x-auto overflow-y-hidden border-b border-border pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {tabs.map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value} className="h-auto flex-none px-0 pb-2.5 after:bottom-0">
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <div className="relative">
+          <TabsList
+            variant="line"
+            aria-label="Seções do projeto"
+            className="w-full flex-nowrap justify-start gap-x-5 overflow-x-auto overflow-y-hidden border-b border-border pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            style={{ height: "auto" }}
+          >
+            {tabs.map((tab) => (
+              <TabsTrigger key={tab.value} value={tab.value} className="h-auto flex-none px-0 pb-2.5 after:bottom-0">
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent"
+          />
+        </div>
 
         <TabsContent value="visao" className="flex flex-col gap-5">
           <div className="grid gap-3 sm:grid-cols-2">

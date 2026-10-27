@@ -82,7 +82,25 @@ export function ProfilesTab() {
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-card">
+      <div className="flex flex-col gap-2 xl:hidden">
+        {matrix.map((row) => (
+          <Card key={row.resource} size="sm">
+            <CardHeader>
+              <CardTitle className="text-sm">{row.resource}</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {ROLE_VALUES.map((role) => (
+                <div key={role} className="flex flex-col gap-1 rounded-md border border-border/60 px-2 py-1.5">
+                  <span className="text-[0.6rem] uppercase tracking-[0.08em] text-muted-foreground">{roleLabel(role)}</span>
+                  <PermissionMark allowed={row.values[role]} />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-xl border border-border bg-card xl:block">
         <Table className="min-w-[44rem]">
           <TableHeader>
             <TableRow className="hover:bg-transparent">

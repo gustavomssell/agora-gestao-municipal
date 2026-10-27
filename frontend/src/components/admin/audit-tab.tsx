@@ -91,7 +91,7 @@ export function AuditTab() {
           />
         </div>
         <Select value={entity} onValueChange={(value) => { setEntity(value); setPage(1) }}>
-          <SelectTrigger className="w-48" aria-label="Filtrar por entidade">
+          <SelectTrigger className="w-full sm:w-48" aria-label="Filtrar por entidade">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -105,7 +105,7 @@ export function AuditTab() {
           </SelectContent>
         </Select>
         <Select value={action} onValueChange={(value) => { setAction(value); setPage(1) }}>
-          <SelectTrigger className="w-52" aria-label="Filtrar por ação">
+          <SelectTrigger className="w-full sm:w-52" aria-label="Filtrar por ação">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -120,7 +120,7 @@ export function AuditTab() {
           </SelectContent>
         </Select>
         <Select value={userId} onValueChange={(value) => { setUserId(value); setPage(1) }}>
-          <SelectTrigger className="w-48" aria-label="Filtrar por usuário">
+          <SelectTrigger className="w-full sm:w-48" aria-label="Filtrar por usuário">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -134,9 +134,9 @@ export function AuditTab() {
             </SelectGroup>
           </SelectContent>
         </Select>
-        <Input type="date" value={from} onChange={(event) => { setFrom(event.target.value); setPage(1) }} className="w-40" aria-label="Data inicial" />
-        <Input type="date" value={to} onChange={(event) => { setTo(event.target.value); setPage(1) }} className="w-40" aria-label="Data final" />
-        <Button variant="outline" onClick={handleExport} disabled={exporting}>
+        <Input type="date" value={from} onChange={(event) => { setFrom(event.target.value); setPage(1) }} className="w-full sm:w-40" aria-label="Data inicial" />
+        <Input type="date" value={to} onChange={(event) => { setTo(event.target.value); setPage(1) }} className="w-full sm:w-40" aria-label="Data final" />
+        <Button variant="outline" onClick={handleExport} disabled={exporting} className="w-full sm:w-auto">
           <Download data-icon="inline-start" />
           {exporting ? "Exportando…" : "Exportar CSV"}
         </Button>
@@ -150,7 +150,24 @@ export function AuditTab() {
         </div>
       ) : logs.length ? (
         <>
-          <div className="overflow-x-auto rounded-xl border border-border bg-card">
+          <div className="flex flex-col gap-2 xl:hidden">
+            {logs.map((log) => (
+              <div key={log.id} className="rounded-xl border border-border bg-card p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-mono text-[0.6rem] uppercase tracking-[0.08em] text-muted-foreground">{log.action}</span>
+                  <span className="font-mono text-[0.65rem] tabular text-muted-foreground">{formatDateTime(log.created_at)}</span>
+                </div>
+                <p className="mt-1.5 text-xs font-medium">{log.user_name}</p>
+                <p className="mt-1 text-xs break-words text-muted-foreground">{log.details}</p>
+                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-mono text-[0.65rem] text-muted-foreground">
+                  <span>{log.entity} #{log.entity_id}</span>
+                  {log.ip ? <span>{log.ip}</span> : null}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden overflow-x-auto rounded-xl border border-border bg-card xl:block">
             <Table className="min-w-[56rem]">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
@@ -158,8 +175,8 @@ export function AuditTab() {
                   <TableHead className="w-40">Usuário</TableHead>
                   <TableHead className="w-44">Ação</TableHead>
                   <TableHead>Detalhe</TableHead>
-                  <TableHead className="hidden lg:table-cell">Entidade</TableHead>
-                  <TableHead className="hidden xl:table-cell">IP</TableHead>
+                  <TableHead className="hidden 2xl:table-cell">Entidade</TableHead>
+                  <TableHead className="hidden 2xl:table-cell">IP</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -169,10 +186,10 @@ export function AuditTab() {
                     <TableCell className="truncate text-xs">{log.user_name}</TableCell>
                     <TableCell className="font-mono text-[0.6rem] uppercase tracking-[0.08em] text-muted-foreground">{log.action}</TableCell>
                     <TableCell className="text-xs">{log.details}</TableCell>
-                    <TableCell className="hidden font-mono text-[0.65rem] text-muted-foreground lg:table-cell">
+                    <TableCell className="hidden font-mono text-[0.65rem] text-muted-foreground 2xl:table-cell">
                       {log.entity} #{log.entity_id}
                     </TableCell>
-                    <TableCell className="hidden font-mono text-[0.65rem] text-muted-foreground xl:table-cell">{log.ip || "—"}</TableCell>
+                    <TableCell className="hidden font-mono text-[0.65rem] text-muted-foreground 2xl:table-cell">{log.ip || "—"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

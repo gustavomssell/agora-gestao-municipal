@@ -30,6 +30,14 @@ Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 - Encaminhamento entre secretarias exige permissão própria, independente da edição do projeto.
 - Status derivado é atualizado também nas leituras de dashboard, kanban, gantt, relatórios, alertas e portal público.
 - Decisão e reabertura de aprovação recalculam o status do projeto.
+- Responsividade do header, painel, kanban, administração, projeto, cronograma e formulários em telas mobile/tablet.
+- Alvos de toque ampliados para 44 px em dispositivos com ponteiro grosso.
+- Abas administrativas com quebra de linha e abas de projeto com indicação de rolagem horizontal.
+- Checklist documental reorganizado em coluna no mobile.
+- Tabelas administrativas de usuários e secretarias substituídas por cards até `lg`.
+- Matriz de permissões e trilha de auditoria substituídas por cards até `xl`.
+- Filtros da auditoria ocupam a largura no mobile.
+- Contraste do badge de status no hero do portal público corrigido.
 
 ## [0.1.2] - 2026-10-20
 
