@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strings"
 
 	"agora/backend/internal/auth"
 	"agora/backend/internal/models"
@@ -13,10 +12,7 @@ func (h *Handler) WebSocket(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusServiceUnavailable, "tempo real indisponível")
 		return
 	}
-	token := strings.TrimSpace(r.URL.Query().Get("token"))
-	if token == "" {
-		token = strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-	}
+	token := auth.SessionTokenFromRequest(r)
 	if token == "" {
 		fail(w, http.StatusUnauthorized, "autenticação necessária")
 		return

@@ -21,14 +21,22 @@ const (
 )
 
 const (
-	StatusNaoIniciado     = "NAO_INICIADO"
-	StatusEmAndamento     = "EM_ANDAMENTO"
-	StatusEmAtraso        = "EM_ATRASO"
-	StatusConcluido       = "CONCLUIDO"
-	StatusConcluidoAtraso = "CONCLUIDO_COM_ATRASO"
-	StatusCancelado       = "CANCELADO"
-	StatusSuspenso        = "SUSPENSO"
+	StatusNaoIniciado         = "NAO_INICIADO"
+	StatusEmAndamento         = "EM_ANDAMENTO"
+	StatusEmAtraso            = "EM_ATRASO"
+	StatusAguardandoAprovacao = "AGUARDANDO_APROVACAO"
+	StatusConcluido           = "CONCLUIDO"
+	StatusConcluidoAtraso     = "CONCLUIDO_COM_ATRASO"
+	StatusCancelado           = "CANCELADO"
+	StatusSuspenso            = "SUSPENSO"
 )
+
+var ProjectStatuses = []string{
+	StatusNaoIniciado, StatusEmAndamento, StatusEmAtraso, StatusAguardandoAprovacao,
+	StatusConcluido, StatusConcluidoAtraso, StatusCancelado, StatusSuspenso,
+}
+
+var ApprovalStages = []string{"TECNICA", "ORCAMENTARIA", "JURIDICA"}
 
 const (
 	ActivityNaoIniciada     = "NAO_INICIADA"

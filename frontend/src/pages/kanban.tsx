@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 const columnAccent: Record<string, string> = {
   nao_iniciado: "border-t-status-neutral",
   em_andamento: "border-t-status-progress",
+  aguardando_aprovacao: "border-t-chart-4",
   concluido: "border-t-status-done",
 }
 
@@ -49,7 +50,7 @@ export default function KanbanPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Quadro kanban"
-        description="Situação derivada das atividades: o projeto entra em andamento ao iniciar a primeira entrega e conclui quando todas terminam."
+        description="Situação derivada das atividades: o projeto entra em andamento ao iniciar a primeira entrega, aguarda aprovação ao terminar as entregas e conclui após o aval das etapas."
         actions={
           me?.permissions.can_create_project ? (
             <Button asChild>
@@ -111,14 +112,13 @@ export default function KanbanPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, index) => (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
             <Skeleton key={index} className="h-80 w-full" />
           ))}
         </div>
       ) : (
-        <div className="grid items-start gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {columns.map((column) => (
+        <div className="grid items-start gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">          {columns.map((column) => (
             <section
               key={column.key}
               className={cn("flex flex-col gap-3 rounded-xl border border-t-2 border-border bg-muted/25 p-3", columnAccent[column.key])}
@@ -169,11 +169,13 @@ export default function KanbanPage() {
                             "h-full rounded-full",
                             project.status === "EM_ATRASO"
                               ? "bg-status-late"
-                              : project.status === "CONCLUIDO"
-                                ? "bg-status-done"
-                                : project.status === "CONCLUIDO_COM_ATRASO"
-                                  ? "bg-status-warn"
-                                  : "bg-primary",
+                              : project.status === "AGUARDANDO_APROVACAO"
+                                ? "bg-chart-4"
+                                : project.status === "CONCLUIDO"
+                                  ? "bg-status-done"
+                                  : project.status === "CONCLUIDO_COM_ATRASO"
+                                    ? "bg-status-warn"
+                                    : "bg-primary",
                           )}
                           style={{ width: `${Math.max(0, Math.min(100, project.progress))}%` }}
                         />

@@ -26,9 +26,9 @@ func New(cfg *config.Config, db *gorm.DB, h *handlers.Handler) http.Handler {
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   strings.Split(cfg.AllowedOrigins, ","),
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Requested-With"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Requested-With", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Content-Disposition"},
-		AllowCredentials: false,
+		AllowCredentials: true,
 		MaxAge:           300,
 	}))
 
@@ -45,9 +45,16 @@ func New(cfg *config.Config, db *gorm.DB, h *handlers.Handler) http.Handler {
 		r.Get("/ws", h.WebSocket)
 
 		r.Group(func(r chi.Router) {
+			r.Use(middleware.CSRF(cfg))
+			r.Post("/auth/logout", h.Logout)
+		})
+
+		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth(cfg, db))
+			r.Use(middleware.CSRF(cfg))
 
 			r.Get("/auth/me", h.Me)
+			r.Get("/auth/csrf", h.CSRF)
 			r.Post("/auth/change-password", h.ChangePassword)
 			r.Put("/auth/profile", h.UpdateProfile)
 			r.Get("/auth/notification-preferences", h.GetNotificationPreferences)

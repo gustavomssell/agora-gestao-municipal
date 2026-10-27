@@ -111,6 +111,12 @@ Se alterar a porta publicada do frontend, ajuste `ALLOWED_ORIGINS` para a URL p�
 
 Em `APP_ENV=production`, a API recusa iniciar com segredo padrão, `SEED=true` ou origens `localhost`.
 
+### Migrações
+
+- Os arquivos SQL ficam em `backend/migrations` no padrão `000002_descricao.sql` e são aplicados em ordem no boot.
+- Cada versão aplicada é registrada em `schema_migrations`; não há rollback automático.
+- Bancos criados antes do runner são marcados com a migração inicial como baseline, sem recriar as tabelas existentes.
+
 ## Arquitetura
 
 ```mermaid
@@ -123,16 +129,16 @@ flowchart LR
   A -->|auditoria, alertas e notificações| P
 ```
 
-- **Backend** (`backend/`): Chi para rotas, GORM/PostgreSQL para persistência, JWT para sessão, bcrypt para senhas, WebSocket para tempo real, Excelize para XLSX e fpdf para PDF.
+- **Backend** (`backend/`): Chi para rotas, GORM/PostgreSQL para persistência, JWT em cookie `HttpOnly`, bcrypt para senhas, WebSocket para tempo real, Excelize para XLSX e fpdf para PDF.
 - **Frontend** (`frontend/`): React 19, React Router, TanStack Query, React Hook Form + Zod, Tailwind CSS v4 e componentes shadcn/ui.
 - **Multi-tenant**: todas as consultas relevantes são filtradas por `tenant_id`; o tenant vem do usuário autenticado.
-- **Status do projeto**: a situação operacional é derivada das atividades e dos prazos, reduzindo alteração manual inconsistente.
+- **Status do projeto**: a situação operacional é derivada das atividades, dos prazos e das aprovações. Atividades canceladas saem do progresso; as suspensas bloqueiam a conclusão; o projeto só conclui com as três etapas de aprovação aprovadas. Alteração manual fica restrita a cancelar, suspender e retomar.
 
 ## Como funciona
 
-1. O usuário entra com prefeitura, e-mail e senha; a API valida o tenant, bloqueia a conta após cinco tentativas inválidas por 15 minutos e emite um JWT de 16 horas.
+1. O usuário entra com prefeitura, e-mail e senha; a API valida o tenant, bloqueia a conta após cinco tentativas inválidas por 15 minutos e grava um JWT de 16 horas em cookie `HttpOnly`. Requisições de escrita exigem o token CSRF da sessão.
 2. O projeto nasce na secretaria do usuário (ou na escolhida por um admin), com prazo e justificativa. Mudanças de prazo exigem justificativa registrada.
-3. Atividades alimentam o progresso do projeto. Riscos, 5W2H, SWOT, lições e anexos ficam vinculados ao projeto; atividades também aceitam anexos.
+3. Atividades alimentam o progresso do projeto e respeitam dependências: uma sucessora não inicia nem conclui antes da predecessora. Atividades podem ser suspensas, canceladas e retomadas; canceladas saem do progresso. Riscos, 5W2H, SWOT, lições e anexos ficam vinculados ao projeto; atividades também aceitam anexos.
 4. Encaminhamentos transferem a responsabilidade entre secretarias e geram notificação em tempo real.
 5. Toda ação relevante grava um registro de auditoria com usuário, entidade, detalhe, IP e data.
 6. Relatórios e cronograma filtram por período e secretaria; o painel usa presets de período para concluídos e execução orçamentária.
@@ -145,7 +151,7 @@ A API REST fica sob `/api`. Os grupos principais são:
 
 | Grupo | Exemplos |
 | --- | --- |
-| Autenticação | `POST /auth/login`, `GET /auth/me`, `PUT /auth/profile`, `POST /auth/change-password` |
+| Autenticação | `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `GET /auth/csrf`, `PUT /auth/profile`, `POST /auth/change-password` |
 | Portfólio | `GET/POST /projects`, `GET /projects/kanban`, `GET /projects/gantt`, `GET /projects/{id}` |
 | Projeto | atividades, riscos, ações 5W2H, SWOT, lições, anexos e histórico |
 | Governança | `GET/PUT /projects/{id}/approvals`, `GET/POST /projects/{id}/documents`, `GET/POST /projects/{id}/stakeholders` |
@@ -164,12 +170,13 @@ O detalhamento de rotas, campos e regras está em [`ESPECIFICACAO.md`](ESPECIFIC
 .
 ├── backend/
 │   ├── main.go
+│   ├── migrations/        # migrações SQL versionadas
 │   └── internal/
-│       ├── auth/          # JWT e senhas
+│       ├── auth/          # JWT, CSRF e senhas
 │       ├── config/        # variáveis de ambiente
-│       ├── database/      # conexão, migrações e seed
+│       ├── database/      # conexão, runner de migrações e seed
 │       ├── handlers/      # regras HTTP
-│       ├── middleware/    # autenticação e autorização
+│       ├── middleware/    # autenticação, CSRF e autorização
 │       ├── models/        # entidades GORM
 │       ├── realtime/      # hub WebSocket
 │       └── server/        # rotas e middlewares
@@ -197,15 +204,15 @@ O workflow em [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda `gofmt
 
 - É uma POC: não há recuperação de senha por e-mail, MFA, gestão de sessões ou exclusão de conta.
 - Anexos ficam em disco local; em produção, use volume persistente ou armazenamento de objetos.
-- As migrações usam `AutoMigrate`, adequado para evolução de POC, não para migrações versionadas de produção.
-- O JWT é guardado no `localStorage`; um hardening futuro deve considerar cookie `HttpOnly` e proteção CSRF.
+- As migrações SQL em `backend/migrations` são aplicadas em ordem e registradas em `schema_migrations`; não há rollback automatizado.
+- A sessão usa cookie `HttpOnly` e CSRF para escrita; em produção, TLS é obrigatório para o cookie `Secure`.
 - A assinatura de aprovações é um registro interno e não substitui certificação digital ICP-Brasil.
 - E-mail e WhatsApp dependem de SMTP/webhook configurados; sem credenciais, as entregas ficam registradas como `SEM_CONFIGURACAO`.
 - O portal público expõe apenas dados marcados para transparência e não possui autenticação de cidadão.
 - Não há testes E2E nem testes de carga; a cobertura atual é unitária no backend.
-- O build do frontend gera um chunk grande; code splitting é uma melhoria pendente.
+- O frontend usa code splitting por rota; o chunk inicial foi reduzido, mas ainda não há orçamento de performance no CI.
 - Não há licença definida no repositório.
 
 ## Antes de publicar
 
-Defina `APP_ENV=production`, um `JWT_SECRET` aleatório com 32+ caracteres, `SEED=false`, `ALLOWED_ORIGINS` com o domínio real e TLS no proxy. Faça backup do PostgreSQL e do diretório de uploads, e monitore os logs da API.
+Defina `APP_ENV=production`, um `JWT_SECRET` aleatório com 32+ caracteres, `SEED=false`, `ALLOWED_ORIGINS` com o domínio real e TLS no proxy. O cookie de sessão só usa `Secure` quando `APP_ENV=production`, então publique sempre atrás de HTTPS. Faça backup do PostgreSQL e do diretório de uploads, e monitore os logs da API.

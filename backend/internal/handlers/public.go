@@ -37,6 +37,7 @@ func (h *Handler) PublicTransparency(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	_ = service.RefreshTenantProjectStatuses(h.DB, tenant.ID)
 	q := h.DB.Preload("ResponsibleSecretariat").Preload("Secretariats").
 		Where("tenant_id = ?", tenant.ID)
 	if status := strings.TrimSpace(r.URL.Query().Get("status")); status != "" {
@@ -57,7 +58,7 @@ func (h *Handler) PublicTransparency(w http.ResponseWriter, r *http.Request) {
 	}
 	service.FillProjectProgress(h.DB, projects)
 	items := make([]publicProjectDTO, 0, len(projects))
-	summary := map[string]int{"total": 0, "active": 0, "late": 0, "completed": 0}
+	summary := map[string]int{"total": 0, "active": 0, "late": 0, "completed": 0, "awaiting_approval": 0}
 	for i := range projects {
 		project := &projects[i]
 		items = append(items, toPublicProject(project))
@@ -66,11 +67,14 @@ func (h *Handler) PublicTransparency(w http.ResponseWriter, r *http.Request) {
 		}
 		summary["total"]++
 		switch project.Status {
-		case models.StatusEmAndamento, models.StatusEmAtraso, models.StatusNaoIniciado:
+		case models.StatusEmAndamento, models.StatusEmAtraso, models.StatusNaoIniciado, models.StatusAguardandoAprovacao:
 			summary["active"]++
 		}
 		if project.Status == models.StatusEmAtraso {
 			summary["late"]++
+		}
+		if project.Status == models.StatusAguardandoAprovacao {
+			summary["awaiting_approval"]++
 		}
 		if project.Status == models.StatusConcluido || project.Status == models.StatusConcluidoAtraso {
 			summary["completed"]++
@@ -95,6 +99,12 @@ func (h *Handler) PublicProjectDetail(w http.ResponseWriter, r *http.Request) {
 	if err := h.DB.Preload("ResponsibleSecretariat").Preload("Secretariats").
 		Where("id = ? AND tenant_id = ?", parseID(chi.URLParam(r, "id")), tenant.ID).
 		First(&project).Error; err != nil {
+		fail(w, http.StatusNotFound, "projeto não encontrado")
+		return
+	}
+	_ = service.RefreshProjectStatus(h.DB, project.ID)
+	if err := h.DB.Preload("ResponsibleSecretariat").Preload("Secretariats").
+		First(&project, project.ID).Error; err != nil {
 		fail(w, http.StatusNotFound, "projeto não encontrado")
 		return
 	}

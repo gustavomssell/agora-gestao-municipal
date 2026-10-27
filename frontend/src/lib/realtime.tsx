@@ -10,14 +10,15 @@ type RealtimeStatus = "connecting" | "online" | "offline"
 const RealtimeContext = createContext<{ status: RealtimeStatus }>({ status: "offline" })
 
 export function RealtimeProvider({ children }: { children: ReactNode }) {
-  const { token, me } = useAuth()
+  const { me } = useAuth()
   const queryClient = useQueryClient()
   const [status, setStatus] = useState<RealtimeStatus>("offline")
   const reconnectAttempt = useRef(0)
   const connectedBefore = useRef(false)
+  const userId = me?.user.id
 
   useEffect(() => {
-    if (!token) {
+    if (!userId) {
       setStatus("offline")
       return
     }
@@ -33,7 +34,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     const connect = () => {
       if (disposed) return
       setStatus("connecting")
-      socket = new WebSocket(`${WS_URL}?token=${encodeURIComponent(token)}`)
+      socket = new WebSocket(WS_URL)
 
       socket.onopen = () => {
         reconnectAttempt.current = 0
@@ -75,7 +76,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
           case "notification.created": {
             invalidate(["notifications"])
             const notification = data.payload as Notification | undefined
-            if (!data.user_id || data.user_id === me?.user.id) {
+            if (!data.user_id || data.user_id === userId) {
               toast(notification?.title ?? "Nova notificação", {
                 description: notification?.message,
               })
@@ -106,7 +107,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       if (timeout) clearTimeout(timeout)
       socket?.close()
     }
-  }, [token, me?.user.id, queryClient])
+  }, [userId, queryClient])
 
   return <RealtimeContext.Provider value={{ status }}>{children}</RealtimeContext.Provider>
 }

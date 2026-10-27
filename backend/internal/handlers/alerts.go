@@ -19,6 +19,7 @@ func (h *Handler) RunAlerts() {
 }
 
 func (h *Handler) runTenantAlerts(tenantID uint) {
+	_ = service.RefreshTenantProjectStatuses(h.DB, tenantID)
 	now := time.Now()
 	today := startOfDay(now)
 	limit := today.AddDate(0, 0, 7)

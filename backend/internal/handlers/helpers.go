@@ -127,6 +127,16 @@ func canManageProject(user *models.User, project *models.Project) bool {
 	return user.SecretariatID != nil && project.ResponsibleSecretariatID == *user.SecretariatID
 }
 
+func canTransferProject(user *models.User, project *models.Project) bool {
+	if user.IsAdmin() {
+		return true
+	}
+	if !user.HasPermission(models.PermProjectsTransfer) {
+		return false
+	}
+	return user.SecretariatID != nil && project.ResponsibleSecretariatID == *user.SecretariatID
+}
+
 func (h *Handler) audit(r *http.Request, action, entity string, entityID uint, details string) {
 	user := middleware.CurrentUser(r)
 	tenant := middleware.CurrentTenant(r)

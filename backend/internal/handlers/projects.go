@@ -16,10 +16,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var validStatuses = []string{
-	models.StatusNaoIniciado, models.StatusEmAndamento, models.StatusEmAtraso,
-	models.StatusConcluido, models.StatusConcluidoAtraso, models.StatusCancelado, models.StatusSuspenso,
-}
+var validStatuses = models.ProjectStatuses
 
 var validPriorities = []string{
 	models.PriorityBaixa, models.PriorityMedia, models.PriorityAlta, models.PriorityCritica,
@@ -52,6 +49,7 @@ type projectRequest struct {
 
 func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
 	user := middleware.CurrentUser(r)
+	_ = service.RefreshTenantProjectStatuses(h.DB, user.TenantID)
 	q := h.projectScope(user)
 
 	window, err := requestPeriodWindow(r)
@@ -151,22 +149,23 @@ func (h *Handler) GetProject(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusNotFound, "projeto não encontrado")
 		return
 	}
-	service.FillProjectProgress(h.DB, []models.Project{*project})
-	var refreshed models.Project
-	if err := h.DB.Preload("ResponsibleSecretariat").Preload("Secretariats").
-		Preload("CreatedBy").First(&refreshed, project.ID).Error; err == nil {
-		items := []models.Project{refreshed}
-		service.FillProjectProgress(h.DB, items)
-		refreshed = items[0]
-		project = &refreshed
+	_ = service.RefreshProjectStatus(h.DB, project.ID)
+	project, err = h.loadVisibleProject(user, id)
+	if err != nil {
+		fail(w, http.StatusNotFound, "projeto não encontrado")
+		return
 	}
+	items := []models.Project{*project}
+	service.FillProjectProgress(h.DB, items)
+	project = &items[0]
 	respond(w, http.StatusOK, map[string]any{
 		"project": project,
 		"permissions": map[string]bool{
-			"can_edit":   canEditProject(user, project),
-			"can_manage": canManageProject(user, project),
-			"can_delete": user.IsAdmin(),
-			"read_only":  user.IsGoverno(),
+			"can_edit":     canEditProject(user, project),
+			"can_manage":   canManageProject(user, project),
+			"can_transfer": canTransferProject(user, project),
+			"can_delete":   user.IsAdmin(),
+			"read_only":    user.IsGoverno(),
 		},
 	})
 }
@@ -332,6 +331,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	}
 	h.ensureApprovalChecklist(&project)
 	h.ensureDocumentChecklist(&project)
+	_ = service.RecomputeProject(h.DB, project.ID)
 
 	for _, s := range secretariats {
 		if s.ID != req.ResponsibleSecretariatID {
@@ -545,22 +545,23 @@ func (h *Handler) ChangeProjectStatus(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	if !contains([]string{models.StatusCancelado, models.StatusSuspenso, models.StatusEmAndamento, models.StatusNaoIniciado}, req.Status) {
+	switch req.Status {
+	case models.StatusCancelado, models.StatusSuspenso:
+	case models.StatusEmAndamento:
+		if project.Status != models.StatusCancelado && project.Status != models.StatusSuspenso {
+			fail(w, http.StatusBadRequest, "o projeto já está em andamento")
+			return
+		}
+	default:
 		fail(w, http.StatusBadRequest, "status inválido; use cancelar, suspender ou retomar")
 		return
 	}
-	if req.Status == models.StatusEmAndamento || req.Status == models.StatusNaoIniciado {
-		project.Status = req.Status
-		if err := h.DB.Model(project).Update("status", req.Status).Error; err != nil {
-			fail(w, http.StatusInternalServerError, "não foi possível alterar o status")
-			return
-		}
+	if err := h.DB.Model(project).Update("status", req.Status).Error; err != nil {
+		fail(w, http.StatusInternalServerError, "não foi possível alterar o status")
+		return
+	}
+	if req.Status == models.StatusEmAndamento {
 		_ = service.RecomputeProject(h.DB, project.ID)
-	} else {
-		if err := h.DB.Model(project).Update("status", req.Status).Error; err != nil {
-			fail(w, http.StatusInternalServerError, "não foi possível alterar o status")
-			return
-		}
 	}
 	h.audit(r, "STATUS_ALTERADO", "projeto", project.ID, fmt.Sprintf("Status alterado para %s. %s", req.Status, req.Note))
 	h.notifyProjectInvolved(project, user.ID, "Status do projeto alterado",
@@ -581,8 +582,8 @@ func (h *Handler) TransferProject(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusNotFound, "projeto não encontrado")
 		return
 	}
-	if !canEditProject(user, project) {
-		fail(w, http.StatusForbidden, "somente a secretaria responsável pode encaminhar o projeto")
+	if !canTransferProject(user, project) {
+		fail(w, http.StatusForbidden, "seu perfil não pode encaminhar este projeto")
 		return
 	}
 	var req transferRequest
@@ -677,6 +678,7 @@ func (h *Handler) ProjectHistory(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Kanban(w http.ResponseWriter, r *http.Request) {
 	user := middleware.CurrentUser(r)
+	_ = service.RefreshTenantProjectStatuses(h.DB, user.TenantID)
 	q := h.projectScope(user).
 		Preload("ResponsibleSecretariat").
 		Preload("Secretariats").
@@ -704,6 +706,7 @@ func (h *Handler) Kanban(w http.ResponseWriter, r *http.Request) {
 	columns := []map[string]any{
 		{"key": "nao_iniciado", "title": "Não iniciado", "items": []models.Project{}},
 		{"key": "em_andamento", "title": "Em andamento", "items": []models.Project{}},
+		{"key": "aguardando_aprovacao", "title": "Aguardando aprovação", "items": []models.Project{}},
 		{"key": "concluido", "title": "Concluído", "items": []models.Project{}},
 	}
 	for _, p := range projects {
@@ -711,8 +714,10 @@ func (h *Handler) Kanban(w http.ResponseWriter, r *http.Request) {
 		switch p.Status {
 		case models.StatusEmAndamento, models.StatusEmAtraso:
 			idx = 1
-		case models.StatusConcluido, models.StatusConcluidoAtraso:
+		case models.StatusAguardandoAprovacao:
 			idx = 2
+		case models.StatusConcluido, models.StatusConcluidoAtraso:
+			idx = 3
 		}
 		items := columns[idx]["items"].([]models.Project)
 		columns[idx]["items"] = append(items, p)
@@ -722,6 +727,7 @@ func (h *Handler) Kanban(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Gantt(w http.ResponseWriter, r *http.Request) {
 	user := middleware.CurrentUser(r)
+	_ = service.RefreshTenantProjectStatuses(h.DB, user.TenantID)
 	var projects []models.Project
 	q := h.projectScope(user).Preload("ResponsibleSecretariat").
 		Where("projects.status NOT IN ?", []string{models.StatusCancelado}).

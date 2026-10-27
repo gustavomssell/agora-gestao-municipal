@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
-import { CalendarRange, Check, CirclePlay, MoreHorizontal, Paperclip, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react"
+import { Ban, CalendarRange, Check, CirclePlay, MoreHorizontal, Paperclip, Pause, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react"
 import { api, type ActivityPayload } from "@/lib/api"
 import { activitySchema, type ActivityFormValues } from "@/lib/schemas"
 import { activityStatusLabels, formatDate, toInputDate } from "@/lib/format"
@@ -143,8 +143,25 @@ export function ActivitiesTab({ projectId, canEdit }: ActivitiesTabProps) {
     }
   }
 
+  async function applyStatus(activity: Activity, status: "SUSPENSA" | "CANCELADA") {
+    try {
+      await api.updateActivity(activity.id, {
+        title: activity.title,
+        description: activity.description,
+        planned_start: toInputDate(activity.planned_start) || null,
+        planned_end: toInputDate(activity.planned_end) || null,
+        status,
+      })
+      toast.success(status === "CANCELADA" ? "Atividade cancelada." : "Atividade suspensa.")
+      invalidate()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível atualizar a atividade.")
+    }
+  }
+
   const activities = data?.items ?? []
-  const done = activities.filter((activity) => activity.status === "CONCLUIDA" || activity.status === "CONCLUIDA_COM_ATRASO").length
+  const countable = activities.filter((activity) => activity.status !== "CANCELADA")
+  const done = countable.filter((activity) => activity.status === "CONCLUIDA" || activity.status === "CONCLUIDA_COM_ATRASO").length
 
   if (isLoading) {
     return (
@@ -160,7 +177,7 @@ export function ActivitiesTab({ projectId, canEdit }: ActivitiesTabProps) {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          <span className="font-mono text-foreground">{done}</span> de {activities.length} atividades concluídas
+          <span className="font-mono text-foreground">{done}</span> de {countable.length} atividades concluídas
         </p>
         {canEdit ? (
           <Button size="sm" onClick={openCreate}>
@@ -238,6 +255,11 @@ export function ActivitiesTab({ projectId, canEdit }: ActivitiesTabProps) {
                                   <Check data-icon="inline-start" />
                                   Concluir
                                 </>
+                              ) : activity.status === "CANCELADA" || activity.status === "SUSPENSA" ? (
+                                <>
+                                  <RotateCcw data-icon="inline-start" />
+                                  Retomar
+                                </>
                               ) : (
                                 <>
                                   <CirclePlay data-icon="inline-start" />
@@ -262,6 +284,19 @@ export function ActivitiesTab({ projectId, canEdit }: ActivitiesTabProps) {
                                 <Pencil />
                                 Editar
                               </DropdownMenuItem>
+                              {!isDone && activity.status !== "CANCELADA" && activity.status !== "SUSPENSA" ? (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onSelect={() => applyStatus(activity, "SUSPENSA")}>
+                                    <Pause />
+                                    Suspender
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem variant="destructive" onSelect={() => applyStatus(activity, "CANCELADA")}>
+                                    <Ban />
+                                    Cancelar
+                                  </DropdownMenuItem>
+                                </>
+                              ) : null}
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 variant="destructive"
