@@ -48,8 +48,8 @@ export default function ProfilePage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => {
-                logout()
+              onClick={async () => {
+                await logout()
                 navigate("/login", { replace: true })
               }}
             >

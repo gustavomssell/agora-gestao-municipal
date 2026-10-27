@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { ThemeToggle } from "@/components/theme-toggle"
 
 export default function LoginPage() {
-  const { token, login } = useAuth()
+  const { me, login } = useAuth()
   const { setBranding } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
@@ -48,7 +48,7 @@ export default function LoginPage() {
     }
   }, [tenantsQuery.data, tenant, form])
 
-  if (token) return <Navigate to={from} replace />
+  if (me) return <Navigate to={from} replace />
 
   async function onSubmit(values: LoginFormValues) {
     try {

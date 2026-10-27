@@ -227,8 +227,8 @@ function UserMenu() {
           <DropdownMenuSeparator />
           <DropdownMenuItem
             variant="destructive"
-            onClick={() => {
-              logout()
+            onClick={async () => {
+              await logout()
               navigate("/login", { replace: true })
             }}
           >

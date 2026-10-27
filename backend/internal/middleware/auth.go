@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"agora/backend/internal/auth"
 	"agora/backend/internal/config"
@@ -16,19 +15,20 @@ import (
 type ctxKey string
 
 const (
-	userKey   ctxKey = "user"
-	tenantKey ctxKey = "tenant"
+	userKey    ctxKey = "user"
+	tenantKey  ctxKey = "tenant"
+	sessionKey ctxKey = "session"
 )
 
 func Auth(cfg *config.Config, db *gorm.DB) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			header := r.Header.Get("Authorization")
-			if !strings.HasPrefix(header, "Bearer ") {
+			token := auth.SessionTokenFromRequest(r)
+			if token == "" {
 				unauthorized(w, "autenticação necessária")
 				return
 			}
-			claims, err := auth.ParseToken(cfg, strings.TrimPrefix(header, "Bearer "))
+			claims, err := auth.ParseToken(cfg, token)
 			if err != nil {
 				unauthorized(w, err.Error())
 				return
@@ -47,6 +47,7 @@ func Auth(cfg *config.Config, db *gorm.DB) func(http.Handler) http.Handler {
 			}
 			ctx := context.WithValue(r.Context(), userKey, &user)
 			ctx = context.WithValue(ctx, tenantKey, &tenant)
+			ctx = context.WithValue(ctx, sessionKey, token)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -64,6 +65,13 @@ func CurrentTenant(r *http.Request) *models.Tenant {
 		return t
 	}
 	return nil
+}
+
+func CurrentSessionToken(r *http.Request) string {
+	if token, ok := r.Context().Value(sessionKey).(string); ok {
+		return token
+	}
+	return ""
 }
 
 func RequireRoles(roles ...string) func(http.Handler) http.Handler {

@@ -49,7 +49,7 @@ import type {
 export const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8090/api"
 const ABSOLUTE_API_URL = new URL(API_URL, window.location.origin).toString().replace(/\/$/, "")
 export const WS_URL = ABSOLUTE_API_URL.replace(/^http/, "ws").replace(/\/api$/, "") + "/api/ws"
-export const TOKEN_KEY = "agora.token"
+const CSRF_KEY = "agora.csrf"
 
 export class ApiError extends Error {
   status: number
@@ -60,35 +60,34 @@ export class ApiError extends Error {
   }
 }
 
-export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY)
+export function getCSRFToken(): string | null {
+  return sessionStorage.getItem(CSRF_KEY)
 }
 
-export function setToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token)
+export function setCSRFToken(token: string) {
+  sessionStorage.setItem(CSRF_KEY, token)
 }
 
-export function clearToken() {
-  localStorage.removeItem(TOKEN_KEY)
-}
-
-function authHeaders(extra?: HeadersInit): HeadersInit {
-  const token = getToken()
-  return {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...extra,
-  }
+export function clearCSRFToken() {
+  sessionStorage.removeItem(CSRF_KEY)
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const headers = authHeaders(init.body instanceof FormData ? undefined : { "Content-Type": "application/json" })
+  const method = (init.method ?? "GET").toUpperCase()
+  const mutating = method !== "GET" && method !== "HEAD" && method !== "OPTIONS"
+  const csrfToken = mutating ? getCSRFToken() : null
+  const headers: HeadersInit = {
+    ...(init.body && !(init.body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
+    ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+    ...init.headers,
+  }
   let response: Response
   try {
-    response = await fetch(`${API_URL}${path}`, { ...init, headers: { ...headers, ...init.headers } })
+    response = await fetch(`${API_URL}${path}`, { ...init, credentials: "include", headers })
   } catch {
     throw new ApiError("Não foi possível falar com o servidor. Verifique a conexão.", 0)
   }
-  if (response.status === 401 && getToken()) {
+  if (response.status === 401 && path !== "/auth/login" && path !== "/auth/me") {
     window.dispatchEvent(new CustomEvent("agora:unauthorized"))
   }
   if (!response.ok) {
@@ -309,6 +308,8 @@ export const api = {
 
   login: (payload: LoginPayload) =>
     request<LoginResponse>("/auth/login", { method: "POST", body: JSON.stringify(payload) }),
+  logout: () => request<void>("/auth/logout", { method: "POST" }),
+  csrf: () => request<{ csrf_token: string }>("/auth/csrf"),
   me: () => request<MeResponse>("/auth/me"),
   notificationPreferences: () => request<NotificationPreferences>("/auth/notification-preferences"),
   updateNotificationPreferences: (payload: NotificationPreferences) =>
@@ -611,7 +612,9 @@ export async function downloadReport(
 ) {
   const { format: requestedFormat, ...filters } = params
   const format = requestedFormat ?? "xlsx"
-  const response = await fetch(`${API_URL}/reports/projects.${format}${query(filters)}`, { headers: authHeaders() })
+  const response = await fetch(`${API_URL}/reports/projects.${format}${query(filters)}`, {
+    credentials: "include",
+  })
   if (!response.ok) {
     throw new ApiError("Não foi possível gerar o relatório.", response.status)
   }
@@ -629,7 +632,9 @@ export async function downloadReport(
 export async function downloadAuditCsv(
   params: { search?: string; action?: string; entity?: string; user_id?: number; from?: string; to?: string } = {},
 ) {
-  const response = await fetch(`${API_URL}/logs/export${query(params)}`, { headers: authHeaders() })
+  const response = await fetch(`${API_URL}/logs/export${query(params)}`, {
+    credentials: "include",
+  })
   if (!response.ok) throw new ApiError("Não foi possível exportar a auditoria.", response.status)
   const blob = await response.blob()
   const url = URL.createObjectURL(blob)
@@ -643,7 +648,9 @@ export async function downloadAuditCsv(
 }
 
 export async function downloadAttachment(attachment: Attachment) {
-  const response = await fetch(`${API_URL}/attachments/${attachment.id}/download`, { headers: authHeaders() })
+  const response = await fetch(`${API_URL}/attachments/${attachment.id}/download`, {
+    credentials: "include",
+  })
   if (!response.ok) throw new ApiError("Não foi possível baixar o arquivo.", response.status)
   const blob = await response.blob()
   const url = URL.createObjectURL(blob)

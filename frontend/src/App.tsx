@@ -36,10 +36,10 @@ function FullScreenLoader() {
 }
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { token, isLoading } = useAuth()
+  const { me, isLoading } = useAuth()
   const location = useLocation()
   if (isLoading) return <FullScreenLoader />
-  if (!token) return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  if (!me) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   return <>{children}</>
 }
 

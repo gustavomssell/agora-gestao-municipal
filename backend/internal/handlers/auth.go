@@ -80,6 +80,7 @@ func (h *Handler) PublicTenants(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
 	var req loginRequest
 	if !decodeJSON(w, r, &req) {
 		return
@@ -123,6 +124,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusInternalServerError, "não foi possível gerar a sessão")
 		return
 	}
+	csrfToken := auth.CSRFToken(h.Cfg, token)
 	now := time.Now()
 	_ = h.DB.Model(&user).Updates(map[string]any{
 		"last_login_at":   now,
@@ -143,14 +145,57 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		IP:       clientIP(r),
 	}).Error
 
+	h.setSessionCookie(w, token)
 	respond(w, http.StatusOK, map[string]any{
-		"token":  token,
-		"user":   toUserDTO(&user),
-		"tenant": publicTenant(&tenant),
+		"csrf_token": csrfToken,
+		"user":       toUserDTO(&user),
+		"tenant":     publicTenant(&tenant),
+	})
+}
+
+func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
+	h.clearSessionCookie(w)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) CSRF(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	token := middleware.CurrentSessionToken(r)
+	if token == "" {
+		fail(w, http.StatusUnauthorized, "autenticação necessária")
+		return
+	}
+	respond(w, http.StatusOK, map[string]string{"csrf_token": auth.CSRFToken(h.Cfg, token)})
+}
+
+func (h *Handler) setSessionCookie(w http.ResponseWriter, token string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     auth.SessionCookieName,
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   h.Cfg.IsProduction(),
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   int(auth.SessionTTL / time.Second),
+		Expires:  time.Now().Add(auth.SessionTTL),
+	})
+}
+
+func (h *Handler) clearSessionCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     auth.SessionCookieName,
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   h.Cfg.IsProduction(),
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   -1,
+		Expires:  time.Unix(1, 0),
 	})
 }
 
 func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
 	user := middleware.CurrentUser(r)
 	tenant := middleware.CurrentTenant(r)
 	respond(w, http.StatusOK, map[string]any{
