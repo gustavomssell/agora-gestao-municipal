@@ -2,7 +2,7 @@
 
 Todas as mudanças relevantes deste projeto são registradas neste arquivo.
 
-## [Não lançado]
+## [0.2.0] - 2026-10-27
 
 ### Segurança
 
